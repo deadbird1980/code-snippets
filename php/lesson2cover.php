@@ -9,45 +9,60 @@ if (count($_SERVER['argv']) == 1) {
   usage();
   exit;
 }
+
+//a template flashUIURL
+function getTemplates($tree) {
+  $fnd = array();
+  if (is_array($tree)) {
+    if (isset($tree['data']) &&isset($tree['type'])) {
+      $fnd = array_merge($fnd, getTemplates($tree['data']));
+    } else {
+      foreach($tree as $key=>$val) {
+        if ($key == 'flashUIURL') {
+          if (isset($val['data']['resourceID']) && strlen($val['data']['resourceID'])>4) {
+            $fnd[] = $val['data']['resourceID'];
+          }
+        } else {
+          $fnd = array_merge($fnd, getTemplates($val));
+        }
+      }
+    }
+  }
+  $fnd = array_unique($fnd);
+  return $fnd;
+}
+
+$pattern = 'lesson_*.json';
 $src = $_SERVER['argv'][1];
+if (in_array("-p", $_SERVER['argv'])) {
+  $key = array_search("-p", $_SERVER['argv']);
+  $pattern = $_SERVER['argv'][$key+1];
+}
+
 $lessonTemplates = array();
 $lessonList = array();
 
-$files = glob("$src/lesson_*.json");
+$files = glob("$src/$pattern");
 foreach($files as $file) {
   $json = file_get_contents($file);
   $template = Zend_Json::decode($json);
   // lesson name
+  if (!isset($template['data']['_resource_id'])) {
+    continue;
+  }
   $lesson_id = $template['data']['_resource_id'];
   $lesson = array();
-  $lesson['name']=array('studyLanguage'=>
+  if (isset($template['data']['name'])) {
+    $lesson['name']=array('studyLanguage'=>
                         $template['data']['name']['data']['studyLanguage'],
                         'userLanguage'=>
                         $template['data']['name']['data']['userLanguage']);
-  $lesson['category'] = $template['data']['category']['data']['studyLanguage'];
-  $lessonList[$lesson_id] = $lesson;
-  $sections = $template['data']['sections'];
-  foreach($sections as $section) {
-    $stages = $section['data']['stages'];
-    foreach($stages as $stage) {
-      $activity = $stage['data']['activity'];
-      if ($activity['type'] == 'com.re.lib.template.dto.project.PE4::DTOMQxQContainer' ||
-          $activity['type'] == 'com.re.lib.template.dto.project.PE4::DTOMPreContainer') {
-        $readingData = $activity['data']['readingData']['data']['media'];
-        $questions = $activity['data']['questions']['data']['activityData'];
-        $activity['type'] = $readingData['type'].':'. $questions['type'] ;
-      }
-      if ($activity['type'] == 'com.re.lib.template.dto.project.PE4::DTOLessonTestContainer') {
-        $activity['type'] = $activity['data']['lessonTest']['type'];
-      }
-      if (!isset($lessonTemplates[$lesson_id])) {
-        $lessonTemplates[$lesson_id] = array();
-      }
-      if (!in_array($activity['type'], $lessonTemplates[$lesson_id])) {
-        $lessonTemplates[$lesson_id][] = $activity['type'];
-      }
-    }
   }
+  if (isset($template['data']['name'])) {
+    $lesson['category'] = $template['data']['category']['data']['studyLanguage'];
+  }
+  $lessonList[$lesson_id] = $lesson;
+  $lessonTemplates[$lesson_id] = getTemplates($template);
 }
 
 print "lessonTemplates=".count($lessonTemplates)."\n";
@@ -82,7 +97,16 @@ foreach($templateLessons as $template => $lessons) {
 
 print "lesson_id, category, lesson_name, lesson_name2\n";
 foreach($lessons2Cover as $lesson) {
-    print "$lesson, {$lessonList[$lesson]['category']}, {$lessonList[$lesson]['name']['studyLanguage']}, {$lessonList[$lesson]['name']['userLanguage']}\n";
+  $cateory = '';
+  if (isset($lessonList[$lesson]['category'])) {
+    $cateory = $lessonList[$lesson]['category'];
+  }
+  $name = ',';
+  if (isset($lessonList[$lesson]['name'])) {
+    $name = "{$lessonList[$lesson]['name']['studyLanguage']}, {$lessonList[$lesson]['name']['userLanguage']}";
+  }
+
+  print "$lesson,$cateory,$name\n";
 }
 
 ?>
