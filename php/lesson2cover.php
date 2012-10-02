@@ -1,10 +1,18 @@
 <?php
 require_once('Zend/Json.php');
+function usage() {
+  print "Usage: php -d include_path=zend lesson2Cover.php [command].... source \n";
+  exit;
+}
+
+if (count($_SERVER['argv']) == 1) {
+  usage();
+  exit;
+}
+$src = $_SERVER['argv'][1];
 $lessonTemplates = array();
 $lessonList = array();
-//find out all the templates
-//find minimum lessons to cover all the temaplates
-$src = '/usr/local/rems_contents/c3_prj9_v1_l2/json';
+
 $files = glob("$src/lesson_*.json");
 foreach($files as $file) {
   $json = file_get_contents($file);
@@ -53,6 +61,7 @@ foreach($lessonTemplates as $lesson_id => $templates) {
   }
 }
 print "templates=".count($templateLessons)."\n";
+
 asort($templateLessons);
 $lessons2Cover = array();
 $templatesCovered = array();
@@ -70,6 +79,7 @@ foreach($templateLessons as $template => $lessons) {
     $templatesCovered = array_merge($lessonTemplates[$lesson2merge], $templatesCovered);
   }
 }
+
 print "lesson_id, category, lesson_name, lesson_name2\n";
 foreach($lessons2Cover as $lesson) {
     print "$lesson, {$lessonList[$lesson]['category']}, {$lessonList[$lesson]['name']['studyLanguage']}, {$lessonList[$lesson]['name']['userLanguage']}\n";
