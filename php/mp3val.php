@@ -505,7 +505,8 @@ class mp3Validator {
                                 $iXingOffset = 9;
                             }
                         }
-                        //if (!$mpginfo->VBRHeaderPresent) ParseVBRIHeader($baseptr, $iFrame + 4 + 32, $mpginfo);
+                        $this->ParseXingHeader($baseptr,$iFrame+4+$iXingOffset,$mpginfo);
+                        if (!$mpginfo->VBRHeaderPresent) $this->ParseVBRIHeader($baseptr, $iFrame + 4 + 32, $mpginfo);
                     }
                     $iLastMPEGFrame = $iFrame;
                     $iFrame+=$iFrameSize;
@@ -577,6 +578,44 @@ class mp3Validator {
         return 0;
     }
 
+    private function ParseVBRIHeader($baseptr, $index, $mpginfo) {
+        if (substr_compare($baseptr, "VBRI", $index, 4)) return 0;
+        $mpginfo->VBRHeaderPresent=true;
+        $mpginfo->IsXingHeader=false;
+        $mpginfo->iBytes=16777216*ord($baseptr[$index+10])+65536*ord($baseptr[$index+11])+256*ord($baseptr[$index+12])+ord($baseptr[$index+13]);
+        $mpginfo->iFrames=16777216*$baseptr[$index+14]+65536*ord($baseptr[$index+15])+256*ord($baseptr[$index+16])+ord($baseptr[$index+17]);
+        $mpginfo->FramesPresent=true;
+        $mpginfo->BytesPresent=true;
+        return 0;
+    }
+
+    private function ParseXingHeader($baseptr, $index, $mpginfo) {
+        if (substr_compare($baseptr, "Xing", $index, 4) && substr_compare($baseptr, "Info", $index, 4)) return 0;
+        $mpginfo->VBRHeaderPresent=true;
+        $mpginfo->IsXingHeader=true;
+        switch(ord($baseptr[$index+7])&0x03) {
+        case 0x00:
+            return 0;
+        case 0x01:
+            $mpginfo->iFrames=16777216*ord($baseptr[$index+8])+65536*ord($baseptr[$index+9])+256*ord($baseptr[$index+10])+ord($baseptr[$index+11]);
+            $mpginfo->FramesPresent=true;
+            $mpginfo->BytesPresent=false;
+            return 0;
+        case 0x02:
+            $mpginfo->iBytes=16777216*ord($baseptr[$index+8])+65536*ord($baseptr[$index+9])+256*ord($baseptr[$index+10])+ord($baseptr[$index+11]);
+            $mpginfo->FramesPresent=false;
+            $mpginfo->BytesPresent=true;
+            return 0;
+        case 0x03:
+            $mpginfo->iFrames=16777216*ord($baseptr[$index+8])+65536*ord($baseptr[$index+9])+256*ord($baseptr[$index+10])+ord($baseptr[$index+11]);
+            $mpginfo->iBytes=16777216*ord($baseptr[$index+12])+65536*ord($baseptr[index+13])+256*ord($baseptr[$index+14])+ord($baseptr[$index+15]);
+            $mpginfo->FramesPresent=true;
+            $mpginfo->BytesPresent=true;
+            return 0;
+        }
+
+        return 0;
+    }
 }
 
 $file = $_SERVER['argv'][1];
