@@ -106,6 +106,7 @@ class mp3Validator {
     private $bytes = '';
     private $warnings = array();
     private $errors = array();
+    private $mpeg_total = 0;
 
     public function __construct($data) {
         $this->mpginfo = new MPEGINFO();
@@ -124,6 +125,10 @@ class mp3Validator {
 
     public function getWarnings() {
         return $this->warnings;
+    }
+
+    public function getMPEGTotal() {
+        return $this->mpeg_total;
     }
 
     private function CalculateCRC16($init, $polynom, $buf, $cb) {
@@ -216,6 +221,13 @@ class mp3Validator {
         return -1;
     }
 
+    private function ValidateAPEv2Tag($baseptr, $index, $mpginfo) {
+        $mpginfo->apev2++;
+        #return *((int *)&baseptr[index+12])+32;
+        list(,$num) = unpack("I*",substr($baseptr,$index+12,4));
+        return $num + 32;
+    }
+
     private function ValidateMPEGFrame($baseptr, $index, $mpginfo) {
 
         $mpeg_version = 0;
@@ -306,35 +318,39 @@ class mp3Validator {
             return -1;
         }
 
-        if ($mpginfo->iLastBitrate > 0 && $mpginfo->iLastBitrate != $mpeg_bitrate)
+        if ($mpginfo->iLastBitrate > 0 && $mpginfo->iLastBitrate != $mpeg_bitrate) {
             $mpginfo->bVariableBitrate = true;
+        }
         $mpginfo->iLastBitrate = $mpeg_bitrate;
 
 //Determine sampling rate
         switch ((ord($baseptr[$index + 2]) >> 2) & 0x03) {
             case 0x00:
-                if ($mpeg_version == 1)
+                if ($mpeg_version == 1) {
                     $mpeg_sampling_rate = 44100;
-                else if ($mpeg_version == 2)
+                } elseif ($mpeg_version == 2) {
                     $mpeg_sampling_rate = 22050;
-                else
+                } else {
                     $mpeg_sampling_rate = 11025;
+                }
                 break;
             case 0x01:
-                if ($mpeg_version == 1)
+                if ($mpeg_version == 1) {
                     $mpeg_sampling_rate = 48000;
-                else if ($mpeg_version == 2)
+                } elseif ($mpeg_version == 2) {
                     $mpeg_sampling_rate = 24000;
-                else
+                } else {
                     $mpeg_sampling_rate = 12000;
+                }
                 break;
             case 0x02:
-                if ($mpeg_version == 1)
+                if ($mpeg_version == 1) {
                     $mpeg_sampling_rate = 32000;
-                else if ($mpeg_version == 2)
+                } elseif ($mpeg_version == 2) {
                     $mpeg_sampling_rate = 16000;
-                else
+                } else {
                     $mpeg_sampling_rate = 8000;
+                }
                 break;
             default:
                 $mpginfo->mpeg_stream_error = $index;
@@ -342,28 +358,32 @@ class mp3Validator {
         }
 
 //Check if padding is being used
-        if ((ord($baseptr[$index + 2]) >> 1) & 0x01)
+        if ((ord($baseptr[$index + 2]) >> 1) & 0x01) {
             $mpeg_padding = 1;
-        else
+        } else {
             $mpeg_padding = 0;
+        }
 
 //Check if frame is stereo
-        if ((ord($baseptr[$index + 3]) & 0xC0) == 0xC0)
+        if ((ord($baseptr[$index + 3]) & 0xC0) == 0xC0) {
             $mpginfo->LastFrameStereo = false;
-        else
+        } else {
             $mpginfo->LastFrameStereo = true;
+        }
 
         $mpginfo->iLastMPEGVersion = $mpeg_version;
         $mpginfo->iLastMPEGLayer = $mpeg_layer;
 
-        if ($mpeg_layer == 1)
-            $iFrameSize = (12 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate + $mpeg_padding) * 4;
-        else if ($mpeg_layer == 2)
-            $iFrameSize = 144 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate + $mpeg_padding;
-        else if ($mpeg_layer == 3 && $mpeg_version == 1)
-            $iFrameSize = 144 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate + $mpeg_padding;
-        else
-            $iFrameSize = 72 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate + $mpeg_padding;
+        if ($mpeg_layer == 1) {
+            // floor is default in C++
+            $iFrameSize = (floor(12 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate) + $mpeg_padding) * 4;
+        } elseif ($mpeg_layer == 2) {
+            $iFrameSize = floor(144 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate) + $mpeg_padding;
+        } elseif ($mpeg_layer == 3 && $mpeg_version == 1) {
+            $iFrameSize = floor(144 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate) + $mpeg_padding;
+        } else {
+            $iFrameSize = floor(72 * $mpeg_bitrate * 1000 / $mpeg_sampling_rate) + $mpeg_padding;
+        }
 
         $mpginfo->iTotalMPEGBytes+=$iFrameSize;
 
@@ -401,6 +421,20 @@ class mp3Validator {
         }
         return 0;
     }
+    
+    private function ValidateID3v2Tag($baseptr,$index, $mpginfo) {
+
+	$mpginfo->id3v2++;
+
+	$iDataSize=$baseptr[$index+9];
+	$iDataSize+=128*$baseptr[$index+8];
+	$iDataSize+=16384*$baseptr[$index+7];
+	$iDataSize+=2097152*$baseptr[$index+6];
+
+	if(ord($baseptr[$index+5])&0x10) return $iDataSize+20;
+	return $iDataSize+10;
+
+    }
 
     private function validate() {
         $baseptr = $this->bytes;
@@ -427,7 +461,7 @@ class mp3Validator {
             if ($iFrame + 10 > $iFileSize) {
                 $mpginfo->truncated = $iFrame;
             } else {
-                $iFrame+=ValidateID3v2Tag($baseptr, $iFrame, $mpginfo);
+                $iFrame+=$this->ValidateID3v2Tag($baseptr, $iFrame, $mpginfo);
             }
         }
 
@@ -484,7 +518,7 @@ class mp3Validator {
                     $mpginfo->truncated = $iFrame;
                     break;
                 }
-                $iFrameSize = ValidateAPEv2Tag($baseptr, $iFrame, $mpginfo);
+                $iFrameSize = $this->ValidateAPEv2Tag($baseptr, $iFrame, $mpginfo);
                 $iFrame+=$iFrameSize;
                 continue;
             }
@@ -531,6 +565,7 @@ class mp3Validator {
                 $mpginfo->mpeg25layer3;
         if ($mpeg_total < 10)
             $this->errors[] = "bad mp3 file\n";
+        $this->mpeg_total = $mpeg_total;
 
         if ($mpginfo->truncated >= 0) {
             if ($LastFrameWasMPEG) {
@@ -549,6 +584,6 @@ $fd = fopen($file, 'r');
 $baseptr = fread($fd, 10000000);
 
 $val = new mp3Validator($baseptr);
-print $val->isValid();
-print_r($val->getErrors());
+print_r ($val->getErrors());
+print_r($val->getMPEGTotal())
 ?>
