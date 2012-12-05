@@ -131,6 +131,10 @@ class mp3Validator {
         return $this->mpeg_total;
     }
 
+    public function getMPEGInfo() {
+        return $this->mpginfo;
+    }
+
     private function CalculateCRC16($init, $polynom, $buf, $cb) {
         $crc = $init & 0xFFFF;
 
@@ -623,6 +627,9 @@ $fd = fopen($file, 'r');
 $baseptr = fread($fd, 10000000);
 
 $val = new mp3Validator($baseptr);
-print_r ($val->getErrors());
-print_r($val->getMPEGTotal())
+if ($val->isValid()) {
+    print "Valid";
+} else {
+    print "not Valid";
+}
 ?>
