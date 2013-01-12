@@ -15,7 +15,7 @@ then
 fi
 
 TMP="/tmp"
-find $1/resource/file -name *.pdf -o -name *.jpg -o -name *.swf -o -name *.mp3 -o -name *.png | sed "s:$1/resource/::" > $TMP/all
+find $1/resource/file -type f \( -name "*.pdf" -or -name "*.jpg" -or -name "*.swf" -or -name "*.mp3" -or -name "*.png" \) | sed "s:$1/resource/::" > $TMP/all
 grep -o --no-filename 'file[^"]*\.\(pdf\|jpg\|swf\|mp3\)' $1/json/*.json| uniq | sed -e 's:\\/:/:g' >  $TMP/used
 fgrep -v $TMP/all -f $TMP/used
 rm $TMP/used
