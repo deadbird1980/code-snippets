@@ -20,7 +20,9 @@ then
     exit
 fi
 
-SOURCE_DIR="$1"
+# remove / at the end if exists
+SOURCE_DIR="${1%/}"
+
 RESOURCE_DIR="resource"
 JSON_DIR="json"
 TMP="/tmp"
@@ -30,7 +32,7 @@ find $SOURCE_DIR/$RESOURCE_DIR -type f \( -name "*.unknown" -or -name "*.pdf" -o
 grep -o --no-filename '"[^"]*\.\(pdf\|jpg\|swf\|mp3\|unknown\)"' $SOURCE_DIR/$JSON_DIR/*.json| uniq |sed -e 's:"::g'| sed -e 's:\\/:/:g' | sort -u| uniq >  $TMP/used
 fgrep -v $TMP/all -f $TMP/used > $TMP/unused
 
-rsync -avzn --remove-source-files $SOURCE_DIR/$RESOURCE_DIR --files-from $TMP/unused $SOURCE_DIR/resource_unused
+rsync -a --remove-source-files $SOURCE_DIR/$RESOURCE_DIR --files-from $TMP/unused $SOURCE_DIR/resource_unused
 
 rm $TMP/all
 rm $TMP/used
