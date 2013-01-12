@@ -21,12 +21,16 @@ then
 fi
 
 SOURCE_DIR="$1"
+RESOURCE_DIR="resource"
+JSON_DIR="json"
 TMP="/tmp"
 
 # find out files under resource with extension as unknown, pdf, jpg, swf, mp3, png
-find $SOURCE_DIR/resource -type f \( -name "*.unknown" -or -name "*.pdf" -or -name "*.jpg" -or -name "*.swf" -or -name "*.mp3" -or -name "*.png" \) | sed "s:$SOURCE_DIR/resource/::" > $TMP/all
-grep -o --no-filename '"[^"]*\.\(pdf\|jpg\|swf\|mp3\|unknown\)"' $SOURCE_DIR/json/*.json| uniq |sed -e 's:"::g'| sed -e 's:\\/:/:g' >  $TMP/used
+find $SOURCE_DIR/$RESOURCE_DIR -type f \( -name "*.unknown" -or -name "*.pdf" -or -name "*.jpg" -or -name "*.swf" -or -name "*.mp3" -or -name "*.png" \) | sed "s:$SOURCE_DIR/$RESOURCE_DIR/::" > $TMP/all
+grep -o --no-filename '"[^"]*\.\(pdf\|jpg\|swf\|mp3\|unknown\)"' $SOURCE_DIR/$JSON_DIR/*.json| uniq |sed -e 's:"::g'| sed -e 's:\\/:/:g' | sort -u| uniq >  $TMP/used
 fgrep -v $TMP/all -f $TMP/used > $TMP/unused
+
+rsync -avzn --remove-source-files $SOURCE_DIR/$RESOURCE_DIR --files-from $TMP/unused $SOURCE_DIR/resource_unused
 
 rm $TMP/all
 rm $TMP/used
