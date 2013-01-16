@@ -1,4 +1,7 @@
 #!/bin/bash - 
+# Project structure: lesson list -> lesson data -> resource file (audio/picture/swf)
+# TODO
+# 1. detect the lessons deleted from system
 set -o nounset                              # Treat unset variables as an error
 usage ()
 {
