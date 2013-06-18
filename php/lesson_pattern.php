@@ -8,29 +8,43 @@ if (count($_SERVER['argv']) == 1) {
   usage();
   exit;
 }
-
-//a template flashUIURL
-function getTemplates($tree) {
-  $fnd = array();
-  if (is_array($tree)) {
-    if (isset($tree->data) &&isset($tree->type)) {
-      $fnd = array_merge($fnd, getTemplates($tree->data));
-    } else {
-      foreach($tree as $key=>$val) {
-        if ($key == 'flashUIURL') {
-          if (isset($val->data->resourceID) && strlen($val->data->resourceID)>4) {
-            $fnd[] = $val->data->resourceID;
-          }
-        } else {
-          $fnd = array_merge($fnd, getTemplates($val));
-        }
-      }
-    }
-  }
-  return $fnd;
+function cmp($a, $b) {
+  return $b['count'] - $a['count'];
 }
 
-$pattern = 'lesson_*.json';
+//a template flashUIURL
+function getTemplates($lesson) {
+  $templates = array();
+  if (isset($lesson->data->sections)) {
+    $sections = $lesson->data->sections;
+  } else {
+    return '';
+  }
+
+  foreach($sections as $section) {
+    $stages = $section->data->stages;
+    foreach($stages as $stage) {
+      $type = $stage->data->activity->type;
+      $activity = $stage->data->activity;
+      switch ($type) {
+        case 'com.re.lib.template.dto.project.PE4::DTOMPreContainer':
+          $type = $activity->data->readingData->data->media->type . '+' . $activity->data->questions->data->activityData->type;
+          break;
+        case 'com.re.lib.template.dto.project.PE4::DTOMQxQContainer':
+          $type = $activity->data->readingData->data->media->type . '+' . $activity->data->questions->data->activityData->type;
+          break;
+        case 'com.re.lib.template.dto.project.PE4::DTOLessonTestContainer':
+          $type = $activity->data->lessonTest->type;
+          break;
+      }
+
+      $templates[] = str_replace('com.re.lib.template.dto.project.PE4::','',$type);
+    }
+  }
+  return implode(',', $templates);
+}
+
+$pattern = 'lesson_[0-9]*.json';
 $src = $_SERVER['argv'][1];
 if (in_array("-p", $_SERVER['argv'])) {
   $key = array_search("-p", $_SERVER['argv']);
@@ -51,60 +65,43 @@ foreach($files as $file) {
   $lesson_id = $template->data->_resource_id;
   $lesson = array();
   if (isset($template->data->name)) {
-    $lesson->name=array('studyLanguage'=>
+    $lesson['name']=array('studyLanguage'=>
                         $template->data->name->data->studyLanguage,
                         'userLanguage'=>
                         $template->data->name->data->userLanguage);
   }
   if (isset($template->data->name)) {
-    $lesson->category = $template->data->category->data->studyLanguage;
+    $lesson['category'] = $template->data->category->data->studyLanguage;
   }
   $lessonList[$lesson_id] = $lesson;
-  $lessonTemplates[$lesson_id] = getTemplates($template);
+
+  $pattern = getTemplates($template);
+  if (strlen(trim($pattern)) > 0) {
+    $lessonTemplates[$lesson_id] = getTemplates($template);
+  }
 }
 
-print "lessonTemplates=".count($lessonTemplates)."\n";
-$templateLessons = array();
+asort($lessonTemplates);
+$patterns = array();
+$pattern = '';
+$first = true;
 foreach($lessonTemplates as $lesson_id => $templates) {
-  foreach($templates as $template) {
-    if (!isset($templateLessons[$template])) {
-      $templateLessons[$template] = array();
-    }
-    $templateLessons[$template][] = $lesson_id;
+  if (!$first && $pattern != $templates) {
+    $patterns[] = array('pattern'=>$pattern, 'lessons'=>$lessons, 'count'=>count($lessons));
+    $lessons = array();
+    $pattern = $templates;
+  } else {
+    $pattern = $templates;
+    $first = false;
   }
+  $lessons[] = $lesson_id;
 }
-print "templates=".count($templateLessons)."\n";
+$patterns[] = array('pattern'=>$templates, 'lessons'=>$lessons, 'count'=>count($lessons));
 
-asort($templateLessons);
-$lessons2Cover = array();
-$templatesCovered = array();
-foreach($templateLessons as $template => $lessons) {
-  if (!in_array($template, $templatesCovered)) {
-    $templatesDiff = 0;
-    foreach($lessons as $lesson) {
-      $diff = array_diff($lessonTemplates[$lesson], $templatesCovered);
-      if ($diff > $templatesDiff) {
-        $templatesDiff = $diff;
-        $lesson2merge = $lesson;
-      }
-    }
-    $lessons2Cover[] = $lesson2merge;
-    $templatesCovered = array_merge($lessonTemplates[$lesson2merge], $templatesCovered);
-  }
-}
-
-print "lesson_id, category, lesson_name, lesson_name2\n";
-foreach($lessons2Cover as $lesson) {
-  $cateory = '';
-  if (isset($lessonList[$lesson]->category)) {
-    $cateory = $lessonList[$lesson]->category;
-  }
-  $name = ',';
-  if (isset($lessonList[$lesson]->name)) {
-    $name = "{$lessonList[$lesson]->name->studyLanguage}, {$lessonList[$lesson]->name->userLanguage}";
-  }
-
-  print "$lesson,$cateory,$name\n";
+usort($patterns,'cmp');
+print "lesson_count,pattern,lessons\n";
+foreach($patterns as $pattern) {
+    print "{$pattern['count']},\"{$pattern['pattern']}\",\"".implode(',', $pattern['lessons'])."\"\n";
 }
 
 ?>
