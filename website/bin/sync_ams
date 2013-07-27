@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+mysqldump -u user -p'password' database > ~/backup/db/latest/database.sql
+mysql -u user -p'password' database_backup < ~/backup/db/latest/database.sql
