@@ -1,18 +1,40 @@
-#!/bin/bash - 
+#!/bin/bash 
 
-server='http://static.files.com/local/mp3'
+CURL='/usr/local/bin/curl'
 
-files=`find . -name '*.mp3'|sed 's/^\.\///g'`
+while getopts d:l:f:o: option
+do
+  case "${option}"
+  in
+    d) DIRECTORY=${OPTARG};;
+    l) URL=$OPTARG;;
+    f) FILE=$OPTARG;;
+    o) OUTPUT=$OPTARG;;
+  esac
+done
+
+if [ "$FILE" != "" ]
+then
+  files=`cat $FILE`
+else
+  files=`find $DIRECTORY -name '*.mp3'|sed "s:${DIRECTORY}::"`
+fi
+
+if [ "$OUTPUT" != "" ]
+then
+  echo $files > $OUTPUT
+fi
+
 for file in $files
 do
-  result=`curl -s -S -f -m 10 -w '%{content_type}' -H "Cache-Control:no-cache" $server/$file -o /dev/null`
+  result=`$CURL -s -S -f -m 10 -w '%{content_type}' -H "Cache-Control:no-cache" $URL/$file -o /dev/null`
   if [ $? -ne 0 ]
   then
     echo $file
   else
     if [ "$result" != "audio/mpeg" ]
     then
-      echo $file
+      echo "$URL/$file"
     fi
   fi
 done
