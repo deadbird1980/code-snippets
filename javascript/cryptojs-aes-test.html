@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <title>CryptoJS AES Test</title>
+    </head>
+    <body>
+        <!--<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/components/core-min.js"></script>-->
+        <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+        <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/components/enc-base64-min.js"></script>
+        <script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/sha256.js"></script>
+<p>Create new encrypted files via:</p>
+<code>openssl enc -aes-256-cbc -in SOURCE.FILE -out ENCRYPTED.AES -pass pass:"Secret Passphrase" -e -base64</code>
+        <script>
+        var base64 = CryptoJS.enc.Base64, choices = ['fromLive','noKey','withKey'], base = choices[2];
+        base = choices[prompt('[0:fromLive,1:noKey,2:withKey]','')];
+        function readFile(url) {
+            console.log('url:', url);
+            xhr = new XMLHttpRequest();
+            xhr.overrideMimeType('text/plain');
+            xhr.open("GET", url, false);
+            xhr.send(null);
+            //return xhr.responseText.replace(/\n/,'');
+            return xhr.responseText;
+        }
+        function decrypt(text, passphrase, iv) {
+            alert(CryptoJS.AES.decrypt(text, passphrase, {iv:iv}).toString(CryptoJS.enc.Utf8));
+        }
+        var text = readFile(base + "/lesson_1708510");
+        var iv = readFile(base+"/iv");
+        iv = base64.parse(iv);
+        var passphrase = prompt('passphrase', '');
+        passphrase = base64.parse(CryptoJS.SHA256(passphrase).toString(base64));
+        decrypt(text, passphrase, iv);
+        </script>
+    </body>
+</html>
