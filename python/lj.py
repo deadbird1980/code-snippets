@@ -4,16 +4,18 @@ import urllib
 import os.path
 import re
 import pycurl
+import time
 from optparse import OptionParser
 from datetime import datetime
 from datetime import date
 from datetime import timedelta
+from download import Download
 
 parser = OptionParser()
 parser.add_option('-p','--program', help='program name')
 parser.add_option('-c','--download-count', help='number of download',default=3)
 parser.add_option('-d','--days', help='last n days', dest='days', default=1)
-parser.add_option('-o','--destination', help='Download directory')
+parser.add_option('-o','--destination', help='Download directory', default='')
 parser.add_option('-n','--dry-run', action="store_true", dest="dry_run", default=False, help='Dry run')
 (options, args) = parser.parse_args()
 urls = ['http://www.ljgdw.com/wzxw/class/','http://www.ljgdw.com/whlj/class/', 'http://www.ljgdw.com/hyfc/class/', 'http://www.ljgdw.com/tndb/class/']
@@ -50,12 +52,26 @@ for url in urls:
       print page[1] + '   ' + flvurl
       if options.dry_run:
         continue
-      if not os.path.exists(file_path):
-        fp = open(file_path, "wb")
-        curl = pycurl.Curl()
-        flvurl = urllib.quote_plus(flvurl, safe=':/')
-        curl.setopt(pycurl.URL, flvurl)
-        curl.setopt(pycurl.WRITEDATA, fp)
-        curl.perform()
-        curl.close()
-        fp.close()
+      flvurl = urllib.quote_plus(flvurl, safe=':/')
+      d = Download(flvurl, options.destination)
+      d.start()
+
+      while 1:
+        try:
+          progress = d.progress['percent']
+          print("%.2f percent | %.2f of %.2f" % (progress, d.progress['downloaded'], d.progress['total']))
+          if progress == 100:
+            print("")
+            print("Download complete: %s" % d.filename)
+            break
+          time.sleep(10)
+
+        # tell thread to terminate on keyboard interrupt,
+        # otherwise the process has to be killed manually
+        except KeyboardInterrupt:
+          d.cancel()
+          break
+
+        except:
+          raise
+      
