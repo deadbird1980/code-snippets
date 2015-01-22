@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- controls\VideoPlayer\VideoPlayerFMS.mxml -->
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+    xmlns:s="library://ns.adobe.com/flex/spark" 
+    xmlns:mx="library://ns.adobe.com/flex/mx" >
+    <s:layout>
+        <s:VerticalLayout/>
+    </s:layout>
+
+    <s:VideoPlayer id="myPlayer"
+        source="./f268fce2_i_2952720_Answering_the_phone.mp4"
+        currentTimeChange="onCurrentTimeChange(event);"
+        width="500" height="300">
+        <!--<s:source>-->
+            <!--http://assets0.reallyenglish.com/rels/205/develop/en/1590923/file/4/a/f268fce2_i_2952720_Answering_the_phone.mp4-->
+            <!--<s:DynamicStreamingVideoSource id="mySVS"-->
+                <!--host="rtmp://fmsexamples.adobe.com/vod/">-->
+                <!--<s:DynamicStreamingVideoItem id="dreamgirl150"-->
+                    <!--streamName="MP4:_PS_dreamgirl_150.f4v"-->
+                    <!--bitrate="150" />-->
+            <!--</s:DynamicStreamingVideoSource>-->
+        <!--</s:source>-->
+    </s:VideoPlayer>
+
+    <s:Label width="500" height="50" id="lbTime"
+        text="Please wait while the video loads..."/>
+	<fx:Script>
+	<![CDATA[
+        import org.osmf.events.TimeEvent;
+
+		public function onCurrentTimeChange(event:Event):void {
+			lbTime.text = ''+myPlayer.currentTime;
+		}
+	]]>
+	</fx:Script>
+</s:Application>
