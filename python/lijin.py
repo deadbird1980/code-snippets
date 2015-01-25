@@ -40,7 +40,7 @@ for url in urls:
       if not os.path.exists(file_path):
         fp = open(file_path, "wb")
         curl = pycurl.Curl()
-        flvurl = urllib.quote(flvurl).replace('%4A', ':')
+        flvurl = urllib.quote(flvurl).replace('%3A', ':')
         curl.setopt(pycurl.URL, flvurl)
         curl.setopt(pycurl.WRITEDATA, fp)
         curl.perform()
