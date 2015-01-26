@@ -8,15 +8,26 @@ import argparse
 import subprocess
 parser = argparse.ArgumentParser(description='ADD YOUR DESCRIPTION HERE')
 parser.add_argument('-p','--program', help='program name', required=False)
+parser.add_argument('-l','--list', action="store_true", default=False, help='list programs',required=False)
 parser.add_argument('-x','--proxy', help='proxy', required=False)
 parser.add_argument('-c','--download-count', help='number of download',default=3, required=False)
 parser.add_argument('-o','--destination', help='Download directory',required=False)
 parser.add_argument('-n','--dry-run', action="store_true", default=False, help='Dry run',required=False)
 args = parser.parse_args()
-urls = ['http://www.ljgdw.com/wzxw/class/','http://www.ljgdw.com/whlj/class/', 'http://www.ljgdw.com/hyfc/class/', 'http://www.ljgdw.com/tndb/class/']
+urls = [
+  'http://www.ljgdw.com/wzxw/class/',#'直播民生'
+  'http://www.ljgdw.com/whlj/class/',#'百姓大舞台'
+  'http://www.ljgdw.com/hyfc/class/',#
+  'http://www.ljgdw.com/minsheng/class/', #'微电影
+  'http://www.ljgdw.com/fhczy/class/', #'七色光'
+  'http://www.ljgdw.com/tndb/class/'#'利津故事
+]
 if args.program:
   start = int(args.program)
   urls = urls[start:start+1]
+if args.list:
+  print urls.join("\n")
+  sys.exit("")
 for url in urls:
   f = urllib.urlopen(url)
   s = f.read()
@@ -37,14 +48,14 @@ for url in urls:
       #download the file
       file_path = (flvurl.rsplit('/',1))[1]
       print page[1] + '   ' + flvurl
-      if args.dry_run:
-        continue
       proxy = ''
       if args.proxy:
-        proxy = "-x " + args.proxy
+        proxy = "-x " + args.proxy + " "
       flvurl = urllib.quote(flvurl).replace('%3A', ':')
-      cmdcurl = "curl  -C - " + proxy + flvurl + ' -o ' + file_path
-      print cmdcurl
+      cmdcurl = "curl -C - " + proxy + flvurl + ' -o ' + file_path
+      if args.dry_run:
+        print cmdcurl
+        continue
       p = subprocess.Popen(cmdcurl, shell=True, stderr=subprocess.PIPE)
       while True:
         out = p.stderr.read(1)
