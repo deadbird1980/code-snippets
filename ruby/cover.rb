@@ -1,4 +1,23 @@
 require 'json'
+require 'optparse'
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: cover.rb [options]"
+
+  opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+    options[:verbose] = v
+  end
+
+  opts.on("-f", "--file FILE", "JSON file") do |v|
+    options[:file] = v
+  end
+
+  opts.on("-i", "--include [EXISTING]", "include") do |v|
+    options[:include] = v
+  end
+end.parse!
+
 class Array
    def contains_all? other
      other = other.dup
@@ -36,7 +55,7 @@ class Array
    end
 end
 
-file_name = ARGV[0]
+file_name = options[:file]
 file = File.read(file_name)
 data_hash = JSON.parse(file)
 arr = []
@@ -61,10 +80,13 @@ data_hash.sort! { |x, y| y["activities"].size <=> x["activities"].size }
 i=0
 j=1
 result = []
-lessons = ["1709061", "1756232", "1608905", "1724355", "1756869", "1687065", "1780158", "1740442", "1810304", "1812304", "1813036", "1707461", "1690915", "1755644", "1796464", "1615561", "1673933", "1690382", "1708510", "1604839"]
-result = data_hash.map{|l| l["activities"] if lessons.include?(l["id"]) }.flatten.compact.uniq
-#result = []
-#lessons = []
+lessons = []
+if options[:include]
+  lessons = JSON.parse(File.read(options[:include]))
+  result = data_hash.map{|l| l["activities"] if lessons.include?(l["id"]) }.flatten.compact.uniq
+end
+
+
 fnd = true
 while fnd do
   i = 0
@@ -111,4 +133,6 @@ while fnd do
 end
 puts lessons.sort.inspect
 puts "#{lessons.size} lessons to cover #{result.size} activities"
-puts result.inspect
+if options[:verbose]
+  puts result.inspect
+end
