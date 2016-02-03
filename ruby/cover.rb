@@ -58,25 +58,6 @@ end
 file_name = options[:file]
 file = File.read(file_name)
 data_hash = JSON.parse(file)
-arr = []
-i=0
-j=1
-while(i<data_hash.size) do
-  j = i+1
-  while(j<data_hash.size) do
-    if data_hash[i]["activities"].contains_all?(data_hash[j]["activities"])
-      data_hash.delete_at(j)
-      j -= 1
-    elsif data_hash[j]["activities"].contains_all?(data_hash[i]["activities"])
-      data_hash.delete_at(i)
-      i -= 1
-      break
-    end
-    j += 1
-  end
-  i += 1
-end
-data_hash.sort! { |x, y| y["activities"].size <=> x["activities"].size }
 i=0
 j=1
 result = []
@@ -97,28 +78,18 @@ while fnd do
     while(j<data_hash.size) do
       a = data_hash[i]["activities"]
       b = data_hash[j]["activities"]
-      if a.contains_all?(b)
-        data_hash.delete_at(j)
-        j -= 1
-      elsif b.contains_all?(a)
-        data_hash.delete_at(i)
-        i -= 1
-      else
-        dups = a.dup.concat(b).uniq - result
-        if dups.size > max
-          to_merge = [i, j]
-          max = dups.size
-        end
+      dups = a.dup.concat(b).uniq - result
+      if dups.size > max
+        to_merge = [i, j]
+        max = dups.size
       end
       j += 1
     end
     i += 1
   end
   if max > 0
-    #puts "#{to_merge} #{max}"
     i = to_merge[0]
     j = to_merge[1]
-    # merge j to i
     data_hash[i]["id"] = [data_hash[j]["id"]].concat([data_hash[i]["id"]]).flatten
     lessons = lessons.concat(data_hash[i]["id"]).uniq
     data_hash[i]["activities"] = data_hash[i]["activities"].concat(data_hash[j]["activities"]).uniq
@@ -134,5 +105,12 @@ end
 puts lessons.sort.inspect
 puts "#{lessons.size} lessons to cover #{result.size} activities"
 if options[:verbose]
-  puts result.inspect
+  data = JSON.parse(file)
+  fnd = nil
+  result.sort.each { |activity|
+    data.each { |lesson|
+      fnd = lesson; break if lessons.include?(lesson["id"]) && lesson["activities"].include?(activity)
+    }
+    puts "#{activity} #{fnd["id"]} #{fnd["name"]}"
+  }
 end
