@@ -36,7 +36,8 @@ class Array
    end
 end
 
-file = File.read('nh_pattens.json')
+file_name = ARGV[0]
+file = File.read(file_name)
 data_hash = JSON.parse(file)
 arr = []
 i=0
@@ -56,38 +57,58 @@ while(i<data_hash.size) do
   end
   i += 1
 end
-puts data_hash.size
 data_hash.sort! { |x, y| y["activities"].size <=> x["activities"].size }
 i=0
 j=1
-result = data_hash[0]["activities"]
-lessons = []
-while(i<data_hash.size) do
-  j = i+1
+result = []
+lessons = ["1709061", "1756232", "1608905", "1724355", "1756869", "1687065", "1780158", "1740442", "1810304", "1812304", "1813036", "1707461", "1690915", "1755644", "1796464", "1615561", "1673933", "1690382", "1708510", "1604839"]
+result = data_hash.map{|l| l["activities"] if lessons.include?(l["id"]) }.flatten.compact.uniq
+#result = []
+#lessons = []
+fnd = true
+while fnd do
+  i = 0
   max = 0
-  to_merge = 0
-  while(j<data_hash.size) do
-    activities = data_hash[j]["activities"]
-    if !result.contains_all?(activities)
-      dups = result.dup.concat(activities).uniq
-      if dups.size > max
-        to_merge = j
-        max = dups.size
+  to_merge = []
+  while(i<data_hash.size) do
+    j = i+1
+    while(j<data_hash.size) do
+      a = data_hash[i]["activities"]
+      b = data_hash[j]["activities"]
+      if a.contains_all?(b)
+        data_hash.delete_at(j)
+        j -= 1
+      elsif b.contains_all?(a)
+        data_hash.delete_at(i)
+        i -= 1
+      else
+        dups = a.dup.concat(b).uniq - result
+        if dups.size > max
+          to_merge = [i, j]
+          max = dups.size
+        end
       end
-    else
-      data_hash.delete_at(j)
-      j -= 1
+      j += 1
     end
-    j += 1
+    i += 1
   end
-  if to_merge > 0 && max > 0
-  puts "#{to_merge} #{max}"
-    lessons<<data_hash[to_merge]["id"] if to_merge > 0
-    result = result.concat(data_hash[to_merge]["activities"]).uniq
-    data_hash.delete_at(to_merge)
+  if max > 0
+    #puts "#{to_merge} #{max}"
+    i = to_merge[0]
+    j = to_merge[1]
+    # merge j to i
+    data_hash[i]["id"] = [data_hash[j]["id"]].concat([data_hash[i]["id"]]).flatten
+    lessons = lessons.concat(data_hash[i]["id"]).uniq
+    data_hash[i]["activities"] = data_hash[i]["activities"].concat(data_hash[j]["activities"]).uniq
+    result = result.concat(data_hash[i]["activities"]).uniq
+    data_hash.delete_at(j)
   else
     break
   end
-  i += 1
+  if data_hash.size <= 1
+    break
+  end
 end
-puts lessons.inspect
+puts lessons.sort.inspect
+puts "#{lessons.size} lessons to cover #{result.size} activities"
+puts result.inspect
