@@ -74,27 +74,29 @@ while fnd do
   max = 0
   to_merge = []
   while(i<data_hash.size) do
-    j = i+1
+    j = i<data_hash.size-1 ? i+1: i
     while(j<data_hash.size) do
       a = data_hash[i]["activities"]
       b = data_hash[j]["activities"]
       dups = a.dup.concat(b).uniq - result
       if dups.size > max
-        to_merge = [i, j]
+        to_merge = [data_hash[i], data_hash[j]]
         max = dups.size
+      elsif dups.size == 0
+        data_hash.delete_at(j)
+        data_hash.delete_at(i)
+        i -= 1
+        break
       end
       j += 1
     end
     i += 1
   end
   if max > 0
-    i = to_merge[0]
-    j = to_merge[1]
-    data_hash[i]["id"] = [data_hash[j]["id"]].concat([data_hash[i]["id"]]).flatten
-    lessons = lessons.concat(data_hash[i]["id"]).uniq
-    data_hash[i]["activities"] = data_hash[i]["activities"].concat(data_hash[j]["activities"]).uniq
-    result = result.concat(data_hash[i]["activities"]).uniq
-    data_hash.delete_at(j)
+    a = to_merge[0]
+    b = to_merge[1]
+    lessons = lessons.concat([a["id"]].concat([b["id"]]).flatten).uniq
+    result = result.concat(a["activities"].concat(b["activities"])).compact.uniq
   else
     break
   end
@@ -102,7 +104,7 @@ while fnd do
     break
   end
 end
-puts lessons.sort.inspect
+puts lessons.sort.join(",")
 puts "#{lessons.size} lessons to cover #{result.size} activities"
 if options[:verbose]
   data = JSON.parse(file)
