@@ -1,0 +1,79 @@
+<html>
+<body>
+<head>
+<style>
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.container {
+  text-rendering: optimizelegibility;
+  display: block;
+  text-align: center;
+  padding-top: 12px;
+  box-sizing: border-box;
+}
+
+.button {
+  height: 72px;
+  background-color: #ddd;
+  background-position: 1.5em center;
+  background-repeat: no-repeat;
+  background-size: 35% auto;
+  border: medium none;
+  border-radius: 100px;
+  cursor: pointer;
+  display: inline-block;
+  font-size: inherit;
+  height: 4.5em;
+  margin: 0.1em;
+  position: relative;
+  width: 4.5em;
+}
+.button.rotate {
+  content: "";
+  width: 4.5em;
+  height: 4.5em;
+  /*position: absolute;
+  */
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+background-size: contain;
+border-top: 1px solid #000;
+border-bottom: 1px solid #000;
+border-right: 1px solid #fff;
+border-left: 1px solid #fff;
+-moz-border-radius: 50%;
+-webkit-border-radius: 50%;
+border-radius: 50%;
+  /*animation: 1s linear 0s normal none infinite running spin;
+  animation: pulse 0.8s 99;
+  -webkit-animation: spin 1s infinite linear;
+  -webkit-animation: 1s linear 0s normal none infinite running spin;*/
+  -moz-animation: spin 1s infinite linear;
+  animation: spin 1s infinite linear;
+  display: inline-block;
+}
+</style>
+</head>
+<div class="container">
+  <button id="record" onclick="this.setAttribute('class', 'button rotate'); this.setAttribute('disabled', 'disabled');" class="button">
+  </button>
+  <button class="button">
+  </button>
+</div>
+</body>
+<script>
+function spin(item) {
+  item.setAttribute('class', 'button rotate');
+  item.setAttribute('disabled', 'disabled');
+  var i=document.createElement('DIV');
+  i.width=100;
+  i.height=100;
+  document.getElementsByTagName('body')[0].appendChild(i);
+  console.log(i);
+}
+</script>
+</html>
