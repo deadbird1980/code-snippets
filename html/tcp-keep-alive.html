@@ -1,0 +1,92 @@
+<html>
+<body>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+<style>
+</style>
+</head>
+<div id="msg">
+</div>
+<div id="error_msg">
+</div>
+</body>
+<script>
+var error_cnt = 0, interval = 5, max_count = 2;
+
+function parseQueryVariables(query) {
+    var pair, hash = {}, i, vars = query.substring(1).split('&');
+    for (i = 0; i < vars.length; i++) {
+            pair = vars[i].split('=');
+                hash[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+    }
+      return hash;
+}
+
+var params = parseQueryVariables(window.location.search);
+
+function getVariable(variable) {
+    if(params[variable]) {
+            return params[variable];
+    }
+    if (typeof window[variable] != 'undefined') {
+            return window[variable];
+    }
+      return '';
+}
+var p = getVariable('interval');
+if (p && !isNaN(p)) {
+  interval = parseFloat(p);
+}
+
+var last_success = 0, last = 0, cnt = 0, diff = 0, success_diff = 0;
+
+var c = getVariable('count');
+if (c && !isNaN(c)) {
+  max_count = parseInt(c);
+}
+
+
+function study_time() {
+  var authorizationToken = 'Token key="1234567"';
+  var sendingInfo = {duration: 0.00001};
+  var jqxhr;
+  try {
+      jqxhr = $.ajax({
+            type:"POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", authorizationToken);
+                xhr.setRequestHeader("Appversion", '3.0.0');
+                diff = new Date() - last;
+                success_diff = new Date() - last_success;
+                cnt++;
+                $('#msg').text(cnt + ". Diff: " + diff + " success Diff:" + success_diff);
+                last = new Date();
+                if (interval > 0 && error_cnt < max_count) {
+                  //interval--;
+                  setTimeout(study_time, 1000*interval);
+                }
+            },
+            url: "api/study_times",
+            data: JSON.stringify(sendingInfo),
+            success: function(result, status, xhr) {
+                //console.log("The result =" + JSON.stringify(msg));
+                //console.log("Diff:", new Date() - last);
+                last_success = new Date();
+            },
+            error: function(xhr, status, error) {
+                error_cnt++;
+                cnt++;
+                console.log("status:", status, "Diff:", diff, "From last success:", new Date() - last_success);
+                var old = $('#error_msg').html();
+                $('#error_msg').html(old + "<BR>" + cnt + ". status: " + status + " Last success:" + success_diff + " Diff: " + diff);
+            }
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
+study_time();
+</script>
+</html>
