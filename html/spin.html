@@ -32,11 +32,13 @@
   width: 4.5em;
 }
 .button.rotate {
+  /*content: "";*/
+}
+.button.rotate:before {
   content: "";
   width: 4.5em;
   height: 4.5em;
-  /*position: absolute;
-  */
+  position: absolute;
   left: 0;
   top: 0;
   box-sizing: border-box;
@@ -59,19 +61,53 @@ border-radius: 50%;
 </style>
 </head>
 <div class="container">
-  <button id="record" onclick="this.setAttribute('class', 'button rotate'); this.setAttribute('disabled', 'disabled');" class="button">
+  <button id="record" onclick="spin(this);" class="button">
   </button>
-  <button class="button">
+  <button class="button" disabled="disabled">
   </button>
 </div>
 </body>
 <script>
+
+function swfObject() {
+  var obj = document.createElement("object"),
+      isMSIE = /*@cc_on!@*/false;
+  //Add attributes to <object>
+  obj.setAttribute("id", "myObjID");
+  //obj.setAttribute("width", "550");
+  //obj.setAttribute("height", "400");
+//Add <param> node(s) to <object>
+  var param_flashvars = document.createElement("param");
+  param_flashvars.setAttribute("name", "flashvars");
+  param_flashvars.setAttribute("value", "cat=meow&dog=woof");
+  obj.appendChild(param_flashvars);
+  if (isMSIE) {
+    //IE requires the 'classid' attribute
+    obj.setAttribute("classid", "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000");
+    //IE requires the 'movie' <param>
+    var param_movie = document.createElement("param");
+    param_movie.setAttribute("name", "movie");
+    param_movie.setAttribute("value", "test.swf");
+    obj.appendChild(param_movie);
+  } else {
+    //Non-IE browsers require the 'type' attribute
+    obj.setAttribute("type", "application/x-shockwave-flash");
+    //Non-IE browsers require the 'data' attribute
+    obj.setAttribute("data", "test.swf");
+  }
+  return obj;
+}
+
 function spin(item) {
   item.setAttribute('class', 'button rotate');
   item.setAttribute('disabled', 'disabled');
   var i=document.createElement('DIV');
-  i.width=100;
-  i.height=100;
+  i.setAttribute("id", "recorderFlashContainer");
+  i.setAttribute("style", "position: fixed; left: -9999px; top: -9999px; width: 230px; height: 140px;");
+  i.style.left   = ((window.innerWidth  || document.body.offsetWidth)  / 2) - 115 + "px";
+  i.style.top    = ((window.innerHeight || document.body.offsetHeight) / 2) - 70  + "px";
+  var swf = swfObject();
+  i.appendChild(swf);
   document.getElementsByTagName('body')[0].appendChild(i);
   console.log(i);
 }
