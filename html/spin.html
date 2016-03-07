@@ -7,6 +7,9 @@
     transform: rotate(1turn);
   }
 }
+.left {
+  float: left;
+}
 .container {
   text-rendering: optimizelegibility;
   display: block;
@@ -33,44 +36,80 @@
 }
 .button.rotate {
   /*content: "";*/
+  vertical-align:top;
 }
-.button.rotate:before {
-  content: "";
+.button.rotate1 {
+  /*content: "";*/
+}
+.button.rotate1:before {
+  content: "\24B6";
   width: 4.5em;
   height: 4.5em;
   position: absolute;
   left: 0;
   top: 0;
   box-sizing: border-box;
-background-size: contain;
-border-top: 1px solid #000;
-border-bottom: 1px solid #000;
-border-right: 1px solid #fff;
-border-left: 1px solid #fff;
--moz-border-radius: 50%;
--webkit-border-radius: 50%;
-border-radius: 50%;
+  background-size: contain;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+  border-right: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 1s infinite linear;
+}
+.button.rotate:before {
+    /*content: "\00A0";*/
+  content: "\24B6";
+  width: 4.5em;
+  height: 4.5em;
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  background-size: contain;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+  border-right: 1px solid #fff;
+  border-left: 1px solid #fff;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+  border-radius: 50%;
   /*animation: 1s linear 0s normal none infinite running spin;
   animation: pulse 0.8s 99;
   -webkit-animation: spin 1s infinite linear;
   -webkit-animation: 1s linear 0s normal none infinite running spin;*/
+  /*display: inline-block;*/
   -moz-animation: spin 1s infinite linear;
   animation: spin 1s infinite linear;
-  display: inline-block;
 }
 </style>
 </head>
 <div class="container">
-  <button id="record" onclick="spin(this);" class="button">
-  </button>
-  <button class="button" disabled="disabled">
-  </button>
+  <button id="record" onclick="spin(this);" class="button"></button>
+  <button class="button" disabled="disabled"></button>
+</div>
+<div class="container">
+  <button id="record" onclick="spin1(this);" class="button"></button>
+  <button class="button" disabled="disabled"></button>
+  <div class="container">
+  <div class="left">
+    <button id="record" onclick="spin(this);" class="button"></button>
+  </div>
+  <div class="left">
+    <button class="button" disabled="disabled"></button>
+  </div>
+  </div>
 </div>
 </body>
 <script>
 
 function spin(item) {
   item.setAttribute('class', 'button rotate');
+  item.setAttribute('disabled', 'disabled');
+}
+function spin1(item) {
+  item.setAttribute('class', 'button rotate1');
   item.setAttribute('disabled', 'disabled');
 }
 </script>
