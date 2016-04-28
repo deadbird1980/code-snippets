@@ -13,7 +13,40 @@
         <option value="week">week</option>
     </select>
 <canvas id="myChart" width="400" height="400"></canvas>
+<canvas id="pieChart" width="300" height="300"></canvas>
 <script>
+function drawPie(data) {
+  var ctx = document.getElementById("pieChart");
+  var myChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: _.keys(data),
+      datasets: [{
+        label: '# of Delays',
+        data: _.values(data),
+        backgroundColor: [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56"
+        ],
+        hoverBackgroundColor: [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56"
+        ]
+      }]
+    },
+    options: {
+      scales: {
+        yAxes: [{
+          ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
+  });
+}
 function drawChart(data) {
     console.log(data);
   var ctx = document.getElementById("myChart");
@@ -66,7 +99,9 @@ $.ajax("attempts.json").done(function(data){
     data = JSON.parse(data);
   }
   attempts = data;
-  drawChart(filterByDelay(data));
+  var result = filterByDelay(data);
+  drawChart(result);
+  drawPie(result);
 });
 </script>
 </body>
