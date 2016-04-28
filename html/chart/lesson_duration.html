@@ -7,27 +7,22 @@
 <script src="http://underscorejs.org/underscore-min.js"></script>
 </head>
 <body>
+    <select id="group">
+        <option value="category">category</option>
+        <option value="level">level</option>
+        <option value="topic">topic</option>
+    </select>
 <canvas id="myChart" width="400" height="400"></canvas>
 <script>
-$.ajax("lesson_duration.json").done(function(data){
-  console.log(data);
-  data = _.filter(data, function(lesson) {return lesson.duration<=3600});
-  var levels = _.groupBy(data, function(lesson){ return lesson.level });
-  var result = {};
-  _.each(levels, function(val, key) {
-    result[key] = _.reduce(val, function(total,lesson){ return total+lesson.duration;}, 0)/val.length;
-
-  });
-  console.log(levels, result);
+function drawChart(data) {
   var ctx = document.getElementById("myChart");
   var myChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      //labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-      labels: _.keys(levels),
+      labels: _.keys(data),
       datasets: [{
-        label: '# of Votes',
-        data: _.values(result)
+        label: '# of Durations',
+        data: _.values(data)
       }]
     },
     options: {
@@ -40,6 +35,31 @@ $.ajax("lesson_duration.json").done(function(data){
         }
     }
   });
+}
+
+function filterBy(data, key) {
+  var levels = _.groupBy(data, function(lesson){ return lesson[key] });
+  var result = {};
+  _.each(levels, function(val, key) {
+    result[key] = _.reduce(val, function(total,lesson){ return total+lesson.duration;}, 0)/val.length;
+
+  });
+  return result;
+}
+
+var lesson_duration = [];
+
+$('#group').change(function() {
+  drawChart(filterBy(lesson_duration, this.value));
+});
+
+$.ajax("lesson_duration.json").done(function(data){
+  if (typeof(data) == 'string') {
+    data = JSON.parse(data);
+  }
+  data = _.filter(data, function(lesson) {return lesson.duration<=3600;});
+  lesson_duration = data;
+  drawChart(filterBy(data, 'topic'));
 });
 </script>
 </body>
