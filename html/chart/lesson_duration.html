@@ -1,0 +1,46 @@
+<html>
+<head>
+<style>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.0.1/Chart.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+</head>
+<body>
+<canvas id="myChart" width="400" height="400"></canvas>
+<script>
+$.ajax("lesson_duration.json").done(function(data){
+  console.log(data);
+  data = _.filter(data, function(lesson) {return lesson.duration<=3600});
+  var levels = _.groupBy(data, function(lesson){ return lesson.level });
+  var result = {};
+  _.each(levels, function(val, key) {
+    result[key] = _.reduce(val, function(total,lesson){ return total+lesson.duration;}, 0)/val.length;
+
+  });
+  console.log(levels, result);
+  var ctx = document.getElementById("myChart");
+  var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      //labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+      labels: _.keys(levels),
+      datasets: [{
+        label: '# of Votes',
+        data: _.values(result)
+      }]
+    },
+    options: {
+      scales: {
+        yAxes: [{
+          ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
+  });
+});
+</script>
+</body>
+</html>
