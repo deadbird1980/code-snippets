@@ -1,0 +1,73 @@
+<html>
+<head>
+<style>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.0.1/Chart.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+</head>
+<body>
+    <select id="unit">
+        <option value="hour">hour</option>
+        <option value="day">day</option>
+        <option value="week">week</option>
+    </select>
+<canvas id="myChart" width="400" height="400"></canvas>
+<script>
+function drawChart(data) {
+    console.log(data);
+  var ctx = document.getElementById("myChart");
+  var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: _.keys(data),
+      datasets: [{
+        label: '# of Delays',
+        data: _.values(data)
+      }]
+    },
+    options: {
+      scales: {
+        yAxes: [{
+          ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
+  });
+}
+
+function filterByDelay(data, unit) {
+  if (typeof(unit) == 'undefined') {
+    unit = 24*3600;
+  }
+  var delay = _.groupBy(data, function(attempt){
+      var delay = attempt.delay;
+      if (delay < 3600) {
+        delay += 9*3600;
+      }
+      if (Math.abs(delay) < 2*60) {
+        delay = 0;
+      }
+      return Math.ceil(delay/unit);
+  });
+  var result = {};
+  _.each(delay, function(val, key) {
+    result[key] = val.length;
+  });
+  return result;
+}
+
+var attempts = [];
+
+$.ajax("attempts.json").done(function(data){
+  if (typeof(data) == 'string') {
+    data = JSON.parse(data);
+  }
+  attempts = data;
+  drawChart(filterByDelay(data));
+});
+</script>
+</body>
+</html>
