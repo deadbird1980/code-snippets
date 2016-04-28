@@ -1,0 +1,76 @@
+<html>
+<head>
+<style>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.0.1/Chart.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+</head>
+<body>
+    <select id="gap">
+        <option value="2">2</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+    </select>
+<div id="graph-container">
+<canvas id="myChart" width="400" height="400"></canvas>
+</div>
+<script>
+function drawChart(data) {
+  $('#myChart').remove(); // this is my <canvas> element
+  $('#graph-container').append('<canvas id="myChart"><canvas>');
+  var ctx = document.getElementById("myChart");
+  var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: _.keys(data),
+      datasets: [{
+        label: '# of Submissions',
+        data: _.values(data)
+      }]
+    },
+    options: {
+      scales: {
+        yAxes: [{
+          ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
+  });
+}
+
+function filterBy(data, gap) {
+  if (typeof(gap) == 'undefined') {
+    gap = 10;
+  }
+  var rows = _.flatten(_.map(data, function(course){ return course.submissions;}));
+  var points = _.groupBy(rows, function(attempt) {
+      return Math.floor(attempt.point/gap);
+  });
+  console.log(points);
+  var result = {};
+  _.each(points, function(val, key) {
+    result[key] = val.length;
+
+  });
+  return result;
+}
+
+var submission = [];
+
+$('#gap').change(function() {
+  drawChart(filterBy(submission, this.value));
+});
+
+$.ajax("submission.json").done(function(data){
+  if (typeof(data) == 'string') {
+    data = JSON.parse(data);
+  }
+  submission = data;
+  drawChart(filterBy(data, 'topic'));
+});
+</script>
+</body>
+</html>
