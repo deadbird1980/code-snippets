@@ -7,6 +7,10 @@
 <script src="http://underscorejs.org/underscore-min.js"></script>
 </head>
 <body>
+    <select id="scale">
+        <option value="3">3 months</option>
+        <option value="12">12 months</option>
+    </select>
     <select id="gap">
         <option value="1">1</option>
         <option value="2">2</option>
@@ -62,8 +66,31 @@ function filterBy(data, gap) {
 var submission = [];
 
 $('#gap').change(function() {
-  drawChart(filterBy(submission, this.value));
+  if ($('#scale').val() == 12) {
+    updateChart(this.value);
+  } else {
+    drawChart(filterBy(submission, this.value));
+  }
 });
+
+$('#scale').change(function() {
+  var gap = $('#gap').val();
+  if (this.value == 12) {
+    updateChart(gap);
+  } else {
+    drawChart(filterBy(submission, gap));
+  }
+});
+
+
+function updateChart(unit) {
+  $.ajax("result/submission_result_"+unit+".json").done(function(data){
+    if (typeof(data) == 'string') {
+      data = JSON.parse(data);
+    }
+    drawChart(data);
+  });
+}
 
 $.ajax("submission.json").done(function(data){
   if (typeof(data) == 'string') {
