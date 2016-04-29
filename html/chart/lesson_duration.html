@@ -40,10 +40,14 @@ function drawChart(data) {
     },
     options: {
       scales: {
+        xAxes: [{
+          display:true,
+          ticks: { autoSkip:true }
+        }],
         yAxes: [{
           display:true,
           ticks: { beginAtZero:true },
-          scaleLabel:{display:true, labelString:"duration(min)"}
+          scaleLabel:{display:true, labelString:"duration(min)", fontSize:16}
         }]
       }
     }
