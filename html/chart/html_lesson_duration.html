@@ -1,0 +1,74 @@
+<html>
+<head>
+<style>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.0.1/Chart.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+<script src="http://underscorejs.org/underscore-min.js"></script>
+</head>
+<body>
+    <div>
+    add time spent on interactions. activities like study reference (continue button enabled at the beginning) will take 0 seond to complete.
+    
+    </div>
+    <select id="group">
+        <option value="category">category</option>
+        <option value="level">level</option>
+        <option value="topic">topic</option>
+    </select>
+<div id="graph-container">
+<canvas id="myChart" width="400" height="400"></canvas>
+</div>
+<script>
+function drawChart(data) {
+  $('#myChart').remove(); // this is my <canvas> element
+  $('#graph-container').append('<canvas id="myChart"><canvas>');
+  var ctx = document.getElementById("myChart");
+  var myChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: _.keys(data),
+      datasets: [{
+        label: '# of Durations',
+        data: _.values(data)
+      }]
+    },
+    options: {
+      scales: {
+        yAxes: [{
+          ticks: {
+                    beginAtZero:true
+                }
+            }]
+        }
+    }
+  });
+}
+
+function filterBy(data, key) {
+  var levels = _.groupBy(data, function(lesson){ return lesson[key] });
+  var result = {};
+  _.each(levels, function(val, key) {
+    result[key] = _.reduce(val, function(total,lesson){ return total+lesson.duration;}, 0)/val.length;
+
+  });
+  return result;
+}
+
+var lesson_duration = [];
+
+$('#group').change(function() {
+  drawChart(filterBy(lesson_duration, this.value));
+});
+
+$.ajax("html_lesson_duration.json").done(function(data){
+  if (typeof(data) == 'string') {
+    data = JSON.parse(data);
+  }
+  data = _.filter(data, function(lesson) {return lesson.duration<=3600;});
+  lesson_duration = data;
+  drawChart(filterBy(data, 'topic'));
+});
+</script>
+</body>
+</html>
