@@ -7,14 +7,22 @@
 <script src="http://underscorejs.org/underscore-min.js"></script>
 </head>
 <body>
+    <select id="scale">
+        <option value="12">12 months</option>
+    </select>
     <select id="group">
         <option value="category">category</option>
         <option value="level">level</option>
         <option value="topic">topic</option>
+        <option value="id">lesson</option>
     </select>
+<div id="graph-container">
 <canvas id="myChart" width="400" height="400"></canvas>
+</div>
 <script>
 function drawChart(data) {
+  $('#myChart').remove(); // this is my <canvas> element
+  $('#graph-container').append('<canvas id="myChart"><canvas>');
   var ctx = document.getElementById("myChart");
   var myChart = new Chart(ctx, {
     type: 'bar',
@@ -38,7 +46,7 @@ function drawChart(data) {
 }
 
 function filterBy(data, key) {
-  var levels = _.groupBy(data, function(lesson){ return lesson[key] });
+  var levels = _.groupBy(data, function(lesson){ return lesson[key]; });
   var result = {};
   _.each(levels, function(val, key) {
     result[key] = _.reduce(val, function(total,lesson){ return total+lesson.duration;}, 0)/val.length;
@@ -49,18 +57,28 @@ function filterBy(data, key) {
 
 var lesson_duration = [];
 
+$('#scale').change(function() {
+  updateChart($('#group').val(), this.value);
+});
 $('#group').change(function() {
-  drawChart(filterBy(lesson_duration, this.value));
+  updateChart(this.value, 12);
 });
-
-$.ajax("lesson_duration.json").done(function(data){
-  if (typeof(data) == 'string') {
-    data = JSON.parse(data);
+function updateChart(key, scale) {
+//$.ajax("lesson_duration.json").done(function(data){
+  var file = 'lesson_duration.json';
+  if (scale == 12) {
+    file = 'lesson_average_duration.json';
   }
-  data = _.filter(data, function(lesson) {return lesson.duration<=3600;});
-  lesson_duration = data;
-  drawChart(filterBy(data, 'topic'));
-});
+  $.ajax("lesson_average_duration.json").done(function(data){
+    if (typeof(data) == 'string') {
+      data = JSON.parse(data);
+    }
+    data = _.filter(data, function(lesson) {return lesson.duration<=3600;});
+    lesson_duration = data;
+    drawChart(filterBy(data, key));
+  });
+}
+updateChart($('#group').val(), 12);
 </script>
 </body>
 </html>
