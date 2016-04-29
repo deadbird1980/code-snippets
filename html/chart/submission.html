@@ -7,9 +7,16 @@
 <script src="http://underscorejs.org/underscore-min.js"></script>
 </head>
 <body>
+    data Scale
     <select id="scale">
-        <option value="3">3 months</option>
         <option value="12">12 months</option>
+        <option value="3">3 months</option>
+    </select>
+    Course Length
+    <select id="duration">
+        <option value="all">All</option>
+        <option value="11">11 months</option>
+        <option value="6">6 months</option>
     </select>
     <select id="gap">
         <option value="1">1</option>
@@ -65,9 +72,19 @@ function filterBy(data, gap) {
 
 var submission = [];
 
+$('#duration').change(function() {
+  var gap = $('#gap').val();
+  if (this.value != 'all') {
+    updateChart(gap, this.value);
+  } else {
+    updateChart(gap);
+  }
+});
+
 $('#gap').change(function() {
+  var duration = $('#duration').val();
   if ($('#scale').val() == 12) {
-    updateChart(this.value);
+    updateChart(this.value, duration);
   } else {
     drawChart(filterBy(submission, this.value));
   }
@@ -77,14 +94,21 @@ $('#scale').change(function() {
   var gap = $('#gap').val();
   if (this.value == 12) {
     updateChart(gap);
+    $('#duration').show();
   } else {
+    $('#duration').hide();
     drawChart(filterBy(submission, gap));
   }
 });
 
 
-function updateChart(unit) {
-  $.ajax("result/submission_result_"+unit+".json").done(function(data){
+function updateChart(unit, duration) {
+  if (typeof(duration) == 'undefined' || duration=='all') {
+    duration = '';
+  } else {
+    duration="_"+duration+"months";
+  }
+  $.ajax("result/submission_result"+duration+"_"+unit+".json").done(function(data){
     if (typeof(data) == 'string') {
       data = JSON.parse(data);
     }
