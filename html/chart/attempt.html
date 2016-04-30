@@ -7,15 +7,22 @@
 <script src="http://underscorejs.org/underscore-min.js"></script>
 </head>
 <body>
+    <h2>When the difference between submitted and created is less than 60 seconds treat this as online submission instead of offline</h2>
     <select id="unit">
-        <option value="hour">hour</option>
-        <option value="day">day</option>
-        <option value="week">week</option>
+        <option value="all">All</option>
+        <option value="24">with first day</option>
+        <option value="1">within first hour</option>
     </select>
-<canvas id="myChart" width="400" height="400"></canvas>
-<canvas id="pieChart" width="300" height="300"></canvas>
+<!--<div id="graph-container">-->
+<!--<canvas id="myChart" width="400" height="400"></canvas>-->
+<!--</div>-->
+<div id="pie-container">
+<canvas id="pieChart" width="400" height="400"></canvas>
+</div>
 <script>
 function drawPie(data) {
+  $('#pieChart').remove(); // this is my <canvas> element
+  $('#pie-container').append('<canvas id="pieChart"><canvas>');
   var ctx = document.getElementById("pieChart");
   var myChart = new Chart(ctx, {
     type: 'pie',
@@ -48,8 +55,9 @@ function drawPie(data) {
   });
 }
 function drawChart(data) {
-    console.log(data);
   var ctx = document.getElementById("myChart");
+  $('#myChart').remove(); // this is my <canvas> element
+  $('#graph-container').append('<canvas id="myChart"><canvas>');
   var myChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -62,11 +70,11 @@ function drawChart(data) {
     options: {
       scales: {
         yAxes: [{
-          ticks: {
-                    beginAtZero:true
-                }
-            }]
-        }
+          display:true,
+          ticks: { beginAtZero:true },
+          scaleLabel:{display:true, labelString:"duration(min)", fontSize:16}
+        }]
+      }
     }
   });
 }
@@ -94,15 +102,24 @@ function filterByDelay(data, unit) {
 
 var attempts = [];
 
-$.ajax("attempts.json").done(function(data){
-  if (typeof(data) == 'string') {
-    data = JSON.parse(data);
+function updateChart(scale) {
+  var url = 'attempt_result_60.json';
+  if (scale == '24') {
+    url = 'attempt_result_1day.json';
+  } else if (scale == 1) {
+    url = 'attempt_result_1hour.json';
   }
-  attempts = data;
-  var result = filterByDelay(data);
-  drawChart(result);
-  drawPie(result);
+  $.ajax("result/" + url).done(function(data){
+    if (typeof(data) == 'string') {
+      data = JSON.parse(data);
+    }
+    drawPie(data);
+  });
+}
+$('#unit').change(function() {
+  updateChart(this.value);
 });
+updateChart('all');
 </script>
 </body>
 </html>
