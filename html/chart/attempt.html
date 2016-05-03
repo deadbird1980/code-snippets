@@ -8,6 +8,10 @@
 </head>
 <body>
     <h2>When the difference between submitted and created is less than 60 seconds treat this as online submission instead of offline</h2>
+    <select id="level">
+        <option value="attempt">Attemp</option>
+        <option value="sync">Mobile Sync</option>
+    </select>
     <select id="unit">
         <option value="all">All</option>
         <option value="24">with first day</option>
@@ -22,7 +26,7 @@
 <script>
 function drawPie(data) {
   $('#pieChart').remove(); // this is my <canvas> element
-  $('#pie-container').append('<canvas id="pieChart"><canvas>');
+  $('#pie-container').append("<canvas id=\"pieChart\" chart-options=\"{tooltipTemplate: '<%=label%>: <%= numeral(value).format('($00[.]00)') %> - <%= numeral(circumference / 6.283).format('(0[.][00]%)') %>'\"><canvas>");
   var ctx = document.getElementById("pieChart");
   var keys = _.keys(data);
   var colors = _.map(keys, function(key) {
@@ -104,13 +108,17 @@ function filterByDelay(data, unit) {
 
 var attempts = [];
 
-function updateChart(scale) {
-  var url = 'attempt_result_60.json';
+function updateChart(scale, level) {
+  var url = 'attempt_result_60';
   if (scale == '24') {
-    url = 'attempt_result_1day.json';
+    url = 'attempt_result_1day';
   } else if (scale == 1) {
-    url = 'attempt_result_1hour.json';
+    url = 'attempt_result_1hour';
   }
+  if (typeof(level)!='undefined' && level == 'sync') {
+    url = url + '_single';
+  }
+  url = url + '.json';
   $.ajax("result/" + url).done(function(data){
     if (typeof(data) == 'string') {
       data = JSON.parse(data);
@@ -118,8 +126,11 @@ function updateChart(scale) {
     drawPie(data);
   });
 }
+$('#level').change(function() {
+  updateChart($('#unit').val(), this.level);
+});
 $('#unit').change(function() {
-  updateChart(this.value);
+  updateChart(this.value, $('#level').val());
 });
 updateChart('all');
 </script>
