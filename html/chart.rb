@@ -34,8 +34,8 @@ def html_lesson_duration(file='')
     course = ls.course
     user = course.user
     
-    if !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil?
-      duration = ls.commands.where(type:'activity-complete').map{|c| 
+    if !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil? && ls.commands.where(:type=>'activity-complete', :startAt=>nil).size == 0
+      duration = ls.commands.where(:type=>'activity-complete', :startAt.ne=>nil).map{|c| 
     	if c.timestamp && c.startAt
     	  Time.parse(c.timestamp)-Time.parse(c.startAt.to_s) 
     	else
@@ -69,7 +69,14 @@ def lesson_duration(file='', start=1.days.ago, verbose=false)
     if course.cms3_project_id==205 && !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil?
       duration = lp.first_score_at.to_i-lp.start_at.to_i
       puts "#{lp.first_score_at} - #{lp.start_at} = #{duration}" if verbose
-      result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, duration:duration, start_at:lp.start_at, first_score_at:lp.first_score_at}
+      a = lp.attempts.sort.first
+      source = 'flash'
+      if !a.guid[/@mobile/].nil?
+      	source = 'mobile'
+      elsif !a.guid[/@html/].nil?
+      	source = 'html'
+      end
+      result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, duration:duration, start_at:lp.start_at, first_score_at:lp.first_score_at, guid:a.guid, source:source}
     end
   }
   unless file.empty?
@@ -86,10 +93,14 @@ html_lesson_duration '/tmp/html_lesson_duration.json'; lesson_duration('/tmp/les
 
 def submission(file='', start=1.day.ago)
   result = []
-  Course.where(cms3_project_id:205, start_at:(start,Time.now), end_at:(start..Time.now), debug_mode:false).each {|course|
+  Course.where(cms3_project_id:205, start_at:(start..Time.now), end_at:(start..Time.now), debug_mode:false).each {|course|
   	  user = course.user
-      result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, start_at:course.start_at, end_at:course.end_at, submissions:course.attempts.map{|a| {lesson_id:a.lesson.cms_id, guid:a.guid, submitted:a.submitted,created:a.created_at}} }
+  	  if user && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil?
+  	    duration = course.end_at.to_i - course.start_at.to_i
+        result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, start_at:course.start_at, end_at:course.end_at, duration:duration, submissions:course.attempts.map{|a| {lesson_id:a.lesson.cms_id, guid:a.guid, submitted:a.submitted,point:(a.submitted.to_i-course.start_at.to_i)/duration.to_f*100,created:a.created_at}}}
+      end
   }
+
   unless file.empty?
     File.open(file, 'w') do |f|
       f.puts result.to_json
