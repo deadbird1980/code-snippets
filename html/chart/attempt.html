@@ -8,6 +8,17 @@
 </head>
 <body>
     <h2>When the difference between submitted and created is less than 60 seconds treat this as online submission instead of offline</h2>
+    <h4>Difference between submitted and created at the server side(If 5 is chosen, it means if the difference is within 5 seconds it will be treated as online submission</h4>
+    <select id="online_adjustment">
+        <option value=5>within 5 second</option>
+        <option value=10>within 10 second</option>
+        <option value=30>within 30 second</option>
+        <option value=60>within 60 second</option>
+    </select>
+    <br>
+    <br>
+    <p>attempt means based on number of attempts submitted</p>
+    <p>Mobile sync means based on number of mobile synced</p>
     <select id="level">
         <option value="attempt">Attemp</option>
         <option value="sync">Mobile Sync</option>
@@ -17,6 +28,7 @@
         <option value="24">with first day</option>
         <option value="1">within first hour</option>
     </select>
+    <p>0 means online study</p>
 <!--<div id="graph-container">-->
 <!--<canvas id="myChart" width="400" height="400"></canvas>-->
 <!--</div>-->
@@ -108,7 +120,7 @@ function filterByDelay(data, unit) {
 
 var attempts = [];
 
-function updateChart(scale, level) {
+function updateChart(scale, level, adjustment) {
   var url = 'attempt_result_60';
   if (scale == '24') {
     url = 'attempt_result_1day';
@@ -118,6 +130,11 @@ function updateChart(scale, level) {
   if (typeof(level)!='undefined' && level == 'sync') {
     url = url + '_single';
   }
+  url = url + '_both';
+  var adjust = '';
+  if (typeof(adjustment)!='undefined') {
+    url = url + '_'+adjustment;
+  }
   url = url + '.json';
   $.ajax("result/" + url).done(function(data){
     if (typeof(data) == 'string') {
@@ -126,11 +143,14 @@ function updateChart(scale, level) {
     drawPie(data);
   });
 }
+$('#online_adjustment').change(function() {
+  updateChart($('#unit').val(), $('#level').val(), this.value);
+});
 $('#level').change(function() {
-  updateChart($('#unit').val(), this.level);
+  updateChart($('#unit').val(), this.value, $('#online_adjustment').val());
 });
 $('#unit').change(function() {
-  updateChart(this.value, $('#level').val());
+  updateChart(this.value, $('#level').val(), $('#online_adjustment').val());
 });
 updateChart('all');
 </script>
