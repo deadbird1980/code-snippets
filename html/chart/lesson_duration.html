@@ -7,6 +7,10 @@
 <script src="http://underscorejs.org/underscore-min.js"></script>
 </head>
 <body>
+    <p>
+    duration = LessonProgress.first_score_at - LessonProgress.start_at
+    exclude the ones longer than 1 hour.
+    </p>
     <select id="scale">
         <option value="12">12 months</option>
     </select>
@@ -20,22 +24,50 @@
 <canvas id="myChart" width="400" height="400"></canvas>
 </div>
 <script>
-function drawChart(data) {
+function drawChart(all, flash, html, mobile) {
+    console.log(arguments);
   $('#myChart').remove(); // this is my <canvas> element
   $('#graph-container').append('<canvas id="myChart"><canvas>');
   var ctx = document.getElementById("myChart");
   var myChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: _.keys(data),
+      labels: _.keys(all),
       datasets: [{
-        label: '# of Durations',
+        label: '# of Durations(all)',
         backgroundColor: "rgba(255,99,132,0.2)",
         borderColor: "rgba(255,99,132,1)",
-        borderWidth: 1,
+        borderWidth: 4,
         hoverBackgroundColor: "rgba(255,99,132,0.4)",
         hoverBorderColor: "rgba(255,99,132,1)",
-        data: _.values(data)
+        data: _.values(all)
+      },
+      {
+        label: '# of Durations(flash)',
+        backgroundColor: "rgba(55,99,132,0.2)",
+        borderColor: "rgba(55,99,132,1)",
+        borderWidth: 1,
+        hoverBackgroundColor: "rgba(55,99,132,0.4)",
+        hoverBorderColor: "rgba(55,99,132,1)",
+        data: _.values(flash)
+      },
+      {
+        label: '# of Durations(html)',
+        backgroundColor: "rgba(255,9,132,0.2)",
+        borderColor: "rgba(255,9,132,1)",
+        borderWidth: 1,
+        hoverBackgroundColor: "rgba(255,9,132,0.4)",
+        hoverBorderColor: "rgba(255,9,132,1)",
+        data: _.values(html)
+      },
+      {
+        label: '# of Durations(mobile)',
+        backgroundColor: "rgba(255,99,32,0.2)",
+        borderColor: "rgba(255,99,32,1)",
+        borderWidth: 1,
+        hoverBackgroundColor: "rgba(255,99,32,0.4)",
+        hoverBorderColor: "rgba(255,99,2,1)",
+        data: _.values(mobile)
       }]
     },
     options: {
@@ -55,12 +87,14 @@ function drawChart(data) {
 }
 
 function filterBy(data, key) {
+    console.log('filterBy', data, key);
   var levels = _.groupBy(data, function(lesson){ return lesson[key]; });
   var result = {};
   _.each(levels, function(val, key) {
     result[key] = _.reduce(val, function(total,lesson){ return total+lesson.duration;}, 0)/val.length/60;
 
   });
+  console.log('result=', result);
   return result;
 }
 
@@ -78,13 +112,34 @@ function updateChart(key, scale) {
   if (scale == 12) {
     file = 'lesson_average_duration.json';
   }
-  $.ajax("lesson_average_duration.json").done(function(data){
-    if (typeof(data) == 'string') {
-      data = JSON.parse(data);
+  $.when($.ajax("result/lesson_average_duration.json"),
+         $.ajax("result/lesson_average_duration_flash.json"),
+         $.ajax("result/lesson_average_duration_html.json"),
+         $.ajax("result/lesson_average_duration_mobile.json")).done( function(all, flash, html, mobile) {
+    all = all[0];
+    flash = flash[0];
+    mobile = mobile[0];
+    html = html[0];
+
+    if (typeof(all) == 'string') {
+      all = JSON.parse(all);
     }
-    data = _.filter(data, function(lesson) {return lesson.duration<=3600;});
-    lesson_duration = data;
-    drawChart(filterBy(data, key));
+    if (typeof(flash) == 'string') {
+      flash = JSON.parse(flash);
+    }
+    if (typeof(html) == 'string') {
+      html = JSON.parse(html);
+    }
+    if (typeof(mobile) == 'string') {
+      mobile = JSON.parse(mobile);
+    }
+    //data = _.filter(data, function(lesson) {return lesson.duration<=3600;});
+    //lesson_duration = data;
+    drawChart(filterBy(all, key),
+            filterBy(flash, key),
+            filterBy(html, key),
+            filterBy(mobile, key)
+            );
   });
 }
 updateChart($('#group').val(), 12);
