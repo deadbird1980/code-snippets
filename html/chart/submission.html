@@ -13,10 +13,25 @@
         <option value="3">3 months</option>
     </select>
     Course Length
+    <select id="group">
+        <option value="month">Month</option>
+        <option value="week">Week</option>
+        <option value="day">Day</option>
+    </select>
     <select id="duration">
         <option value="all">All</option>
-        <option value="11">11 months</option>
-        <option value="6">6 months</option>
+        <option value="1">1 month</option>
+        <option value="2">2 month</option>
+        <option value="3">3 month</option>
+        <option value="4">4 month</option>
+        <option value="5">5 month</option>
+        <option value="6">6 month</option>
+        <option value="7">7 month</option>
+        <option value="8">8 month</option>
+        <option value="9">9 month</option>
+        <option value="10">10 month</option>
+        <option value="11">11 month</option>
+        <option value="12">12 month</option>
     </select>
     <select id="gap">
         <option value="1">1</option>
@@ -61,7 +76,6 @@ function filterBy(data, gap) {
   var points = _.groupBy(rows, function(attempt) {
       return Math.floor(attempt.point/gap);
   });
-  console.log(points);
   var result = {};
   _.each(points, function(val, key) {
     result[key] = val.length;
@@ -72,14 +86,38 @@ function filterBy(data, gap) {
 
 var submission = [];
 
-$('#duration').change(function() {
+$('#group').change(function() {
+  var groups = {month: 12, week:44, day:282};
+  if ((this.value) == 'day') {
+    $('#duration').replaceWith($('<input/>',{'id':'duration', 'type':'text','value':'other'}));  
+  } else {
+      $('#duration').replaceWith($('<select/>', {'id':'duration'}));
+    for (var i=0; i<groups[this.value]; i++) {
+      $('#duration').append($('<option>', { value: i+1, text : (i+1) + ' ' + this.value }));
+    }
+  }
+  bindDuration();
   var gap = $('#gap').val();
+  var duration = $('#duration').val();
   if (this.value != 'all') {
-    updateChart(gap, this.value);
+    updateChart(gap, duration, this.value);
   } else {
     updateChart(gap);
   }
 });
+
+function bindDuration() {
+  $('#duration').change(function() {
+    var gap = $('#gap').val();
+    var group = $('#group').val();
+    if (this.value != 'all') {
+      updateChart(gap, this.value, group);
+    } else {
+      updateChart(gap);
+    }
+  });
+}
+bindDuration();
 
 $('#gap').change(function() {
   var duration = $('#duration').val();
@@ -102,15 +140,22 @@ $('#scale').change(function() {
 });
 
 
-function updateChart(unit, duration) {
-  if (typeof(duration) == 'undefined' || duration=='all') {
-    duration = '';
-  } else {
-    duration="_"+duration+"months";
+function updateChart(unit, duration, group) {
+  if (typeof(group) == 'undefined') {
+    group = 'month';
   }
-  $.ajax("result/submission_result"+duration+"_"+unit+".json").done(function(data){
+  if (typeof(duration) == 'undefined' || duration=='all') {
+    duration_file = '';
+  } else {
+    duration_file="_" + group;
+    unit=1;
+  }
+  $.ajax("result/submission_result"+duration_file+"_"+unit+".json").done(function(data){
     if (typeof(data) == 'string') {
       data = JSON.parse(data);
+    }
+    if (duration_file) {
+      data = data[duration];
     }
     drawChart(data);
   });
