@@ -9,10 +9,6 @@ OptionParser.new do |opts|
     options[:verbose] = v
   end
 
-  opts.on("-f", "--file FILE", "JSON file") do |v|
-    options[:file] = v
-  end
-
   opts.on("-i", "--include [EXISTING]", "include") do |v|
     options[:include] = v
   end
@@ -55,8 +51,7 @@ class Array
    end
 end
 
-file_name = options[:file]
-file = File.read(file_name)
+file = ARGF.read
 data_hash = JSON.parse(file)
 i=0
 j=1
