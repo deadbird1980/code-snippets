@@ -55,7 +55,6 @@ def html_lesson_duration(file='')
   result
 end
 
-LessonProgress.where(:start_at.ne=>nil,:first_score_at.ne=>nil).where(:first_score_at=>{"$gte"=>"this.start_at"}).size
 
 def lesson_duration(file='', start=1.days.ago, verbose=false)
 
@@ -86,9 +85,6 @@ def lesson_duration(file='', start=1.days.ago, verbose=false)
   end
   result
 end
-
-html_lesson_duration '/tmp/html_lesson_duration.json'; lesson_duration('/tmp/lesson_duration.json', 2.days); 0
-
 
 
 def submission(file='', start=1.day.ago)
@@ -141,3 +137,6 @@ def attempts(file='', start=1.day.ago, verbose=false)
   rows
 end
 
+#html_lesson_duration '/tmp/html_lesson_duration.json'; lesson_duration('/tmp/lesson_duration.json', 2.days); 0
+#LessonProgress.where(:start_at.ne=>nil,:first_score_at.ne=>nil).where(:first_score_at=>{"$gte"=>"this.start_at"}).size
+#lesson_duration '/tmp/html_duration.json'; lesson_duration('/tmp/lesson_duration.json', 2.days); 0
