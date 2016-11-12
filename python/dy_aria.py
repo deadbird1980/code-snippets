@@ -19,19 +19,23 @@ parser.add_argument('-n','--dry-run', action="store_true", default=False, help='
 parser.add_argument('-v','--verbose', action="store_true", default=False, help='Verbose',required=False)
 args = parser.parse_args()
 urls = [
-  'http://www.hhek.cn/xinwenpindao/node_393.shtml',#东营新闻联播
-  'http://www.hhek.cn/xinwenpindao/node_489.shtml?id=489', #民生零距离
-  'http://www.hhek.cn/xinwenpindao/weiweidaolai_1.shtml?id=2493',
-  'http://www.hhek.cn/gonggongpindao/node_838.shtml?id=838', #生活直通车
-  'http://www.hhek.cn/gonggongpindao/node_972.shtml?id=972'
+  ('http://www.hhek.cn/xinwenpindao/node_393.shtml', '东营新闻联播'),
+  ('http://www.hhek.cn/xinwenpindao/node_489.shtml?id=489', '民生零距离'),
+  ('http://www.hhek.cn/xinwenpindao/weiweidaolai_1.shtml?id=2493', '伟伟道来'),
+  ('http://www.hhek.cn/gonggongpindao/node_838.shtml?id=838', '生活直通车'),
+  ('http://www.hhek.cn/jingpinlanmu/node_925.shtml', '美丽东营'),
+  ('http://www.hhek.cn/gonggongpindao/node_972.shtml?id=972', '七色星光')
 ]
 if args.program:
   start = int(args.program)
   urls = urls[start:start+1]
 if args.list:
-  print "\n".join(urls)
+  i = 0
+  for k,v in urls:
+    print str(i) + '. ' + v + '\t' + k
+    i = i + 1
   sys.exit("")
-for url in urls:
+for url,v in urls:
   f = urllib.urlopen(url)
   s = f.read()
   f.close()

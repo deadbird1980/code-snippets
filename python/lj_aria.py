@@ -19,22 +19,25 @@ parser.add_argument('-o','--destination', help='Download directory',required=Fal
 parser.add_argument('-n','--dry-run', action="store_true", default=False, help='Dry run',required=False)
 args = parser.parse_args()
 urls = [
-  'http://www.ljgdw.com/news/class/',#利津新闻
-  'http://www.ljgdw.com/wzxw/class/',#'直播民生'
-  'http://www.ljgdw.com/zcrfc/class/',#'相约看天下'
-  'http://www.ljgdw.com/whlj/class/',#'百姓大舞台'
-  'http://www.ljgdw.com/hyfc/class/',#
-  'http://www.ljgdw.com/minsheng/class/', #'微电影
-  'http://www.ljgdw.com/fhczy/class/', #'七色光'
-  'http://www.ljgdw.com/tndb/class/'#'利津故事
+  ('http://www.ljgdw.com/news/class/','利津新闻'),
+  ('http://www.ljgdw.com/wzxw/class/','直播民生'),
+  ('http://www.ljgdw.com/zcrfc/class/','相约看天下'),
+  ('http://www.ljgdw.com/whlj/class/','百姓大舞台'),
+  ('http://www.ljgdw.com/hyfc/class/','少年梦想秀'),
+  ('http://www.ljgdw.com/minsheng/class/', '微电影'),
+  ('http://www.ljgdw.com/fhczy/class/', '七色光'),
+  ('http://www.ljgdw.com/tndb/class/', '利津故事')
 ]
 if args.program:
   start = int(args.program)
   urls = urls[start:start+1]
 if args.list:
-  print "\n".join(urls)
+  i = 0
+  for k,v in urls:
+    print str(i) + '. ' + v + '\t' + k
+    i = i + 1
   sys.exit("")
-for url in urls:
+for url,v in urls:
   f = urllib.urlopen(url)
   s = f.read()
   f.close()
@@ -44,7 +47,7 @@ for url in urls:
   for page in pages:
     if args.before and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') > datetime.strptime(args.before, '%Y/%m/%d'):
       continue
-    if args.after and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') < datetime.strptime(args.before, '%Y/%m/%d'):
+    if args.after and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') < datetime.strptime(args.after, '%Y/%m/%d'):
       continue
     i = i + 1
     if i > int(args.download_count):
