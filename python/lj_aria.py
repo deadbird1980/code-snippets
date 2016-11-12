@@ -42,13 +42,13 @@ for url in urls:
   #pages = [['1.flv', u'http://shiping.ljgdw.com/flv/lj/11.03故事.flv']]
   i = 0
   for page in pages:
-    i = i + 1
-    if i > int(args.download_count):
-      break
     if args.before and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') > datetime.strptime(args.before, '%Y/%m/%d'):
       continue
     if args.after and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') < datetime.strptime(args.before, '%Y/%m/%d'):
       continue
+    i = i + 1
+    if i > int(args.download_count):
+      break
     f = urllib.urlopen(url + page[0])
     s = f.read()
     f.close()
