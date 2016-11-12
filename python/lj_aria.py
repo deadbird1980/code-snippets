@@ -6,11 +6,15 @@ import os.path
 import re
 import argparse
 import subprocess
+from datetime import datetime
+
 parser = argparse.ArgumentParser(description='ADD YOUR DESCRIPTION HERE')
 parser.add_argument('-p','--program', help='program name', required=False)
 parser.add_argument('-l','--list', action="store_true", default=False, help='list programs',required=False)
 parser.add_argument('-x','--proxy', help='proxy', required=False)
 parser.add_argument('-c','--download-count', help='number of download',default=3, required=False)
+parser.add_argument('-b','--before', help='before date', required=False)
+parser.add_argument('-a','--after', help='after date', required=False)
 parser.add_argument('-o','--destination', help='Download directory',required=False)
 parser.add_argument('-n','--dry-run', action="store_true", default=False, help='Dry run',required=False)
 args = parser.parse_args()
@@ -41,6 +45,10 @@ for url in urls:
     i = i + 1
     if i > int(args.download_count):
       break
+    if args.before and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') > datetime.strptime(args.before, '%Y/%m/%d'):
+      continue
+    if args.after and datetime.strptime(page[1].rsplit('日', 1)[0], '%Y年%m月%d') < datetime.strptime(args.before, '%Y/%m/%d'):
+      continue
     f = urllib.urlopen(url + page[0])
     s = f.read()
     f.close()
