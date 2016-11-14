@@ -44,15 +44,9 @@ def html_lesson_duration(file='', rows=0)
           0
         end
       }.sum
-      first_command = commands.first
-      last_command = commands.last
-      unless last_command.timestamp.nil? || first_command.timestamp.nil?
-        start_to_end = Time.parse(last_command.timestamp) - Time.parse(first_command.timestamp)
-        #result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, startToEnd:start_to_end,duration:duration,commands:commands}
-        result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, startToEnd:start_to_end,duration:duration}
-      else
-        puts "NO command timestamp: lesson_session_id: #{ls.id} member_course_id:#{course.member_course_id} lesson_id:#{lesson.cms_id}"
-      end
+      commands = commands.sort
+      start_to_end = commands.last.created_at - commands.first.created_at
+      result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, lesson_session_id:ls.id, startToEnd:start_to_end,duration:duration}
     end
 
     if !file.empty? && rows > 0 && result.size > rows
