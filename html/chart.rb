@@ -25,30 +25,46 @@ def html_lesson_study(file='')
   result
 end
 
-def html_lesson_duration(file='')
-  lses = LessonSession.where(active:false).to_a
+def html_lesson_duration(file='', rows=0)
   result = []
-  lses.each{|ls|
+  i = 0
+  LessonSession.where(active:false).each{|ls|
     commands = ls.commands.sort
     lesson = ls.lesson
     course = ls.course
     user = course.user
     
-    if !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil? && ls.commands.where(:type=>'activity-complete', :startAt=>nil).size == 0
+    if !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil? && !ls.commands.nil? && ls.commands.size>0 && ls.commands.where(:type=>'activity-complete', :startAt=>nil).size == 0
       duration = ls.commands.where(:type=>'activity-complete', :startAt.ne=>nil).map{|c| 
-    	if c.timestamp && c.startAt
-    	  Time.parse(c.timestamp)-Time.parse(c.startAt.to_s) 
-    	else
-    	  puts "lesson_session_id: #{ls.id} member_course_id:#{course.member_course_id} lesson_id:#{lesson.cms_id}"
-    	  puts c.inspect
-    	  0
+        if c.timestamp && c.startAt
+          Time.parse(c.timestamp)-Time.parse(c.startAt.to_s) 
+        else
+          puts "lesson_session_id: #{ls.id} member_course_id:#{course.member_course_id} lesson_id:#{lesson.cms_id}"
+          puts c.inspect
+          0
         end
       }.sum
-      result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, startToEnd:Time.parse(commands.last.timestamp) - Time.parse(commands.first.timestamp),duration:duration,commands:commands}
+      first_command = commands.first
+      last_command = commands.last
+      unless last_command.timestamp.nil? || first_command.timestamp.nil?
+        start_to_end = Time.parse(last_command.timestamp) - Time.parse(first_command.timestamp)
+        #result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, startToEnd:start_to_end,duration:duration,commands:commands}
+        result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, startToEnd:start_to_end,duration:duration}
+      else
+        puts "NO command timestamp: lesson_session_id: #{ls.id} member_course_id:#{course.member_course_id} lesson_id:#{lesson.cms_id}"
+      end
+    end
+
+    if !file.empty? && rows > 0 && result.size > rows
+      i++
+      File.open(file.gsub('.json', '') + "+#{i}.json", 'w') do |f|
+        f.puts result.to_json
+      end
+      result = []
     end
   }
   unless file.empty?
-    File.open(file, 'w') do |f|
+    File.open(file.gsub('.json', '') + "+#{i}.json", 'w') do |f|
       f.puts result.to_json
     end
   end
