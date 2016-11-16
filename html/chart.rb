@@ -28,37 +28,36 @@ end
 def html_lesson_duration(file='', rows=0)
   result = []
   i = 0
-  LessonSession.where(active:false).each{|ls|
+  re_user_ids = User.where(email:/reallyenglish|example/).pluck :id
+  LessonSession.where(:user_id.nin=>re_user_ids, active:false, :commands.not=>{"$size"=>0},:commands.elem_match=>{:type=>'attempt'}).each{|ls|
     commands = ls.commands.sort
     lesson = ls.lesson
     course = ls.course
     user = course.user
-    
-    if !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil? && !ls.commands.nil? && ls.commands.size>0 && ls.commands.where(:type=>'activity-complete', :startAt=>nil).size == 0
-      duration = ls.commands.where(:type=>'activity-complete', :startAt.ne=>nil).map{|c| 
-        if c.timestamp && c.startAt
-          Time.parse(c.timestamp)-Time.parse(c.startAt.to_s) 
-        else
-          puts "lesson_session_id: #{ls.id} member_course_id:#{course.member_course_id} lesson_id:#{lesson.cms_id}"
-          puts c.inspect
-          0
-        end
-      }.sum
-      commands = commands.sort
-      start_to_end = commands.last.created_at - commands.first.created_at
-      result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, lesson_session_id:ls.id, startToEnd:start_to_end,duration:duration}
-    end
+
+    duration = ls.commands.where(:type=>'activity-complete', :startAt.ne=>nil).map{|c| 
+      if c.timestamp && c.startAt
+        Time.parse(c.timestamp)-Time.parse(c.startAt.to_s) 
+      else
+        puts "lesson_session_id: #{ls.id} member_course_id:#{course.member_course_id} lesson_id:#{lesson.cms_id}"
+        puts c.inspect
+        0
+      end
+    }.sum
+    created_ats = commands.pluck :created_at
+    start_to_end = created_ats.max - created_ats.min
+    result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, lesson_session_id:ls.id, startToEnd:start_to_end,duration:duration}
 
     if !file.empty? && rows > 0 && result.size > rows
       i++
-      File.open(file.gsub('.json', '') + "+#{i}.json", 'w') do |f|
+      File.open(file.gsub('.json', '') + "_#{i}.json", 'w') do |f|
         f.puts result.to_json
       end
       result = []
     end
   }
   unless file.empty?
-    File.open(file.gsub('.json', '') + "+#{i}.json", 'w') do |f|
+    File.open(file.gsub('.json', '') + "_#{i}.json", 'w') do |f|
       f.puts result.to_json
     end
   end
@@ -147,6 +146,6 @@ def attempts(file='', start=1.day.ago, verbose=false)
   rows
 end
 
-#html_lesson_duration '/tmp/html_lesson_duration.json'; lesson_duration('/tmp/lesson_duration.json', 2.days); 0
+#html_lesson_duration '/tmp/html_lesson_duration.json'
+#lesson_duration('/tmp/lesson_duration.json', 2.days); 0
 #LessonProgress.where(:start_at.ne=>nil,:first_score_at.ne=>nil).where(:first_score_at=>{"$gte"=>"this.start_at"}).size
-#lesson_duration '/tmp/html_duration.json'; lesson_duration('/tmp/lesson_duration.json', 2.days); 0
