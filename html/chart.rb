@@ -44,7 +44,7 @@ def html_lesson_duration(file='', rows=0)
         0
       end
     }.sum
-    created_ats = commands.pluck :created_at
+    created_ats = commands.map(&:created_at).compact
     start_to_end = created_ats.max - created_ats.min
     result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, lesson_session_id:ls.id, startToEnd:start_to_end,duration:duration}
 
@@ -77,12 +77,16 @@ def lesson_duration(file='', start=1.days.ago, verbose=false)
     if course.cms3_project_id==205 && !course.debug_mode && user.email[/reallyenglish/].nil? && user.email[/exmaple/].nil?
       duration = lp.first_score_at.to_i-lp.start_at.to_i
       puts "#{lp.first_score_at} - #{lp.start_at} = #{duration}" if verbose
-      a = lp.attempts.sort.first
-      source = 'flash'
-      if !a.guid[/@mobile/].nil?
-      	source = 'mobile'
-      elsif !a.guid[/@html/].nil?
-      	source = 'html'
+      if lp.attempts.size > 0
+        a = lp.attempts.sort.first
+        source = 'flash'
+        if !a.guid[/@mobile/].nil?
+          source = 'mobile'
+        elsif !a.guid[/@html/].nil?
+          source = 'html'
+        end
+      else
+        source = 'desktop'
       end
       result << {member_id:user.auth_system_user_id, email:user.email,course_id:course.member_course_id, lesson_id:lesson.cms_id, level:lesson.level, category:lesson.category, topic:lesson.topic, duration:duration, start_at:lp.start_at, first_score_at:lp.first_score_at, guid:a.guid, source:source}
     end
