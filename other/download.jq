@@ -1,0 +1,1 @@
+jq 'reverse|(path(.[]) as $path|getpath($path)|"aria2c -o "+($path[0]+1|tostring)+"."+(.["preview-title"]|gsub(" ";"\\ "))+".mp3  "+(.["audio-preview-url"]|split("url=")|.[1]|gsub("%3A";":")|gsub("%2F";"/")))' shiwujidan.json
