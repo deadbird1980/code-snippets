@@ -1,0 +1,46 @@
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="326" height="330" applicationComplete="init()"> 
+    <mx:Script> 
+    <![CDATA[ 
+    import flash.desktop.Clipboard; 
+    import flash.desktop.ClipboardFormats; 
+
+    public function init():void 
+    { 
+        destination.addEventListener("paste", doPaste); 
+    }
+
+    public function doCopy():void 
+    { 
+        Clipboard.generalClipboard.clear(); 
+        Clipboard.generalClipboard.setDataHandler(ClipboardFormats.TEXT_FORMAT, renderData); 
+    } 
+
+    public function doChange():void 
+    { 
+        source.text = "0\b\b\b1";
+        var reg = /\b/g;
+        reg = new RegExp("/\b/", 'g');
+        //destination.text = "0\b\b\b1".replace(reg, '');
+        destination.text = "0\b\b\b1".replace(/\x08/g, '-');
+    } 
+    public function doPaste(event:Event):void 
+    {
+        Clipboard.generalClipboard.clear(); 
+        //destination.text = Clipboard.generalClipboard.getData(ClipboardFormats.TEXT_FORMAT).toString; 
+        source.text = "aaaaaa";
+        //source.text = "\b\b\b\baaaaaa";
+    }
+
+    public function renderData():String{ 
+        trace("Rendering data"); 
+        return source.text; 
+    } 
+    ]]> 
+    </mx:Script> 
+    <mx:Label x="10" y="10" text="Source"/> 
+    <mx:TextArea id="source" text="11111" x="10" y="36" width="300" height="100"/> 
+    <mx:Label x="10" y="181" text="Destination"/> 
+    <mx:TextArea id="destination"  x="12" y="207" width="300" height="100"/> 
+    <mx:Button click="doCopy();" x="91" y="156" label="Copy"/> 
+    <mx:Button click="doChange();" x="191" y="156" label="Change"/> 
+</mx:Application> 

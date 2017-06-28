@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- usingas/HelloWorldAS.mxml -->
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute">
+  <mx:Panel title="My Application"  height="128" x="226" y="24" layout="absolute">
+     <mx:TextArea id="textarea1" width="155" x="0" y="0"/>
+     <mx:Button label="Click Me"
+        click="textarea1.text='Hello World';" 
+        width="92" 
+        x="31.5" 
+        y="56"
+     />
+  </mx:Panel>
+</mx:Application>
