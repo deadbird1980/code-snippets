@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- http://blog.flexexamples.com/2008/08/25/saving-files-locally-using-the-filereference-classs-save-method-in-flash-player-10/ -->
+<s:Application name="FileReference_save_test"
+        xmlns:fx="http://ns.adobe.com/mxml/2009" 
+        xmlns:s="library://ns.adobe.com/flex/spark" 
+        xmlns:mx="library://ns.adobe.com/flex/mx"
+        xmlns:net="flash.net.*"
+        creationComplete="init();">
+
+    <fx:Script>
+        <![CDATA[
+            import mx.graphics.ImageSnapshot;
+            import mx.graphics.codec.*;
+
+            private const jpegEnc:JPEGEncoder = new JPEGEncoder();
+            private const xmlObj:XML = describeType(FileReference);
+
+            private function init():void {
+                textArea.text = xmlObj.toXMLString();
+            }
+
+            private function btn_click(evt:MouseEvent):void {
+                var imageSnap:ImageSnapshot = ImageSnapshot.captureImage(panel, 0, jpegEnc);
+                fileReference.save(imageSnap.data, "describeType.jpg");
+            }
+        ]]>
+    </fx:Script>
+
+    <fx:Declarations>
+        <net:FileReference id="fileReference" />
+    </fx:Declarations>
+
+    <s:Panel id="panel"
+            width="500" height="300"
+            verticalCenter="0" horizontalCenter="0">
+        <s:controlBarContent>
+            <s:Button id="btn"
+                    label="Save"
+                    click="btn_click(event);" />
+        </s:controlBarContent>
+        <s:TextArea id="textArea"
+                editable="true"
+                width="100%" height="100%" />
+    </s:Panel>
+
+</s:Application>

@@ -1,0 +1,60 @@
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml"
+    layout="vertical"
+    verticalAlign="middle"
+    backgroundColor="white"
+    creationComplete="init();">
+
+<mx:Script>
+<![CDATA[
+    import mx.utils.ObjectUtil;
+
+    private var nc:NetConnection;
+    private var ns:NetStream;
+    private var video:Video;
+    private var meta:Object;
+
+    private function init():void {
+    var nsClient:Object = {};
+    nsClient.onMetaData = ns_onMetaData;
+    nsClient.onCuePoint = ns_onCuePoint;
+
+    nc = new NetConnection();
+    nc.connect(null);
+
+    ns = new NetStream(nc);
+    ns.play("http://assets0.reallyenglish.com/rels/205/develop/en/1590923/file/4/a/f268fce2_i_2952720_Answering_the_phone.mp4");
+    ns.client = nsClient;
+
+    video = new Video();
+    video.attachNetStream(ns);
+    uic.addChild(video);
+    }
+
+    private function ns_onMetaData(item:Object):void {
+    trace("meta");
+    meta = item;
+    // Resize Video object to same size as meta data.
+    video.width = item.width;
+    video.height = item.height;
+    // Resize UIComponent to same size as Video object.
+    uic.width = video.width;
+    uic.height = video.height;
+    panel.title = "framerate: " + item.framerate;
+    panel.visible = true;
+    trace(ObjectUtil.toString(item));
+    }
+
+    private function ns_onCuePoint(item:Object):void {
+    trace("cue");
+    }
+]]>
+</mx:Script>
+
+<mx:Panel id="panel" visible="false">
+    <mx:UIComponent id="uic" />
+    <mx:ControlBar>
+    <mx:Button label="Play/Pause" click="ns.togglePause();" />
+    <mx:Button label="Rewind" click="ns.seek(0); ns.pause();" />
+    </mx:ControlBar>
+</mx:Panel>
+</mx:Application>

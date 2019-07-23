@@ -1,40 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
-               xmlns:s="library://ns.adobe.com/flex/spark" 
-               xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600"
-               initialize="init()">
-    <fx:Declarations>
-        <!-- Place non-visual elements (e.g., services, value objects) here -->
-    </fx:Declarations>
-    
-    <fx:Script>
-        <![CDATA[
-            
-            //private var camVideo:Video;
-            private var wowzaVideo:Video;
-            private var nc:NetConnection = new NetConnection();
+<!-- http://blog.flexexamples.com/2008/12/30/maintaining-an-videos-aspect-ratio-on-a-videodisplay-control-in-flex/ -->
+<mx:Application name="VideoDisplay_maintainAspectRatio_test"
+        xmlns:mx="http://www.adobe.com/2006/mxml"
+        layout="vertical"
+        verticalAlign="middle"
+        backgroundColor="white">
 
-            private function init():void
-            {
+    <mx:ApplicationControlBar dock="true">
+        <mx:Form styleName="plain">
+            <mx:FormItem label="maintainAspectRatio:">
+                <mx:CheckBox id="checkBox" />
+            </mx:FormItem>
+        </mx:Form>
+    </mx:ApplicationControlBar>
 
-                nc.addEventListener(NetStatusEvent.NET_STATUS, ncOnStatus);
-                nc.connect("http://assets0.reallyenglish.com/rels/205/develop/en/1590923/file/4/a/f268fce2_i_2952720_Answering_the_phone.mp4");
-                wowzaVideo = new Video();
-                wowzaVideo.attachToNetConnection(nc);
-                wowzaVideoDisplay.addChild(wowzaVideo);
-            }
+    <mx:VideoDisplay id="videoDisplay"
+            maintainAspectRatio="{checkBox.selected}"
+            source="http://helpexamples.com/flash/video/cuepoints.flv"
+            autoPlay="false"
+            width="200"
+            height="200"
+            click="videoDisplay.play();" />
 
-            private function ncOnStatus(infoObject:NetStatusEvent):void
-            {
-
-                if (infoObject.info.code == "NetConnection.Connect.Success")
-                {
-                    //wowzaVideo.attachNetStream(ns);
-                    //wowzaVideoDisplay.addChild(wowzaVideo);
-                }
-            }
-        ]]>
-    </fx:Script>
-
-    <mx:VideoDisplay id="wowzaVideoDisplay" x="404" y="48" width="282" height="222"/>
-</s:Application>
+</mx:Application>

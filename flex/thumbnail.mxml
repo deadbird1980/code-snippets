@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="vertical" verticalAlign="middle" backgroundColor="white">
+
+    <mx:Script>
+        <![CDATA[
+            import mx.events.CuePointEvent;
+            import mx.collections.ArrayCollection;
+
+            [Bindable]
+            private var arrColl:ArrayCollection = new ArrayCollection();
+
+            private function copyBitmap(source:DisplayObject):Bitmap {
+                var bmd:BitmapData = new BitmapData(source.width, source.height);
+                bmd.draw(source);
+                return new Bitmap(bmd);
+            }
+
+            private function videoDisplay_cuePoint(evt:CuePointEvent):void {
+                var bm:Bitmap = copyBitmap(evt.currentTarget as DisplayObject);
+                arrColl.addItem({bitmap:bm, cuePointName:evt.cuePointName, cuePointTime:evt.cuePointTime, cuePointType:evt.cuePointType});
+            }
+        ]]>
+    </mx:Script>
+
+    <mx:Panel id="panel" layout="horizontal">
+        <mx:HBox paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5" backgroundColor="black">
+            <mx:VideoDisplay id="videoDisplay" source="http://www.helpexamples.com/flash/video/cuepoints.flv" cuePoint="videoDisplay_cuePoint(event)" top="5" />
+        </mx:HBox>
+
+        <mx:TileList id="tileList" columnCount="1" dataProvider="{arrColl}" width="{videoDisplay.width}" height="{videoDisplay.height + 10}" verticalScrollPolicy="on">
+            <mx:itemRenderer>
+                <mx:Component>
+                    <mx:HBox paddingBottom="0" paddingTop="0">
+                        <mx:Image source="{data.bitmap}" toolTip="{data.cuePointTime}" maintainAspectRatio="true" scaleX="0.5" scaleY="0.5" />
+                        <mx:Text textAlign="left">
+                            <mx:htmlText>name: &lt;b&gt;{data.cuePointName}&lt;/b&gt;&lt;br /&gt;time: {data.cuePointTime} &lt;br /&gt;type: {data.cuePointType}</mx:htmlText>
+                        </mx:Text>
+                    </mx:HBox>
+                </mx:Component>
+            </mx:itemRenderer>
+        </mx:TileList>
+    </mx:Panel>
+
+</mx:Application>

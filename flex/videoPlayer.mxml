@@ -29,7 +29,7 @@
         import org.osmf.events.TimeEvent;
 
 		public function onCurrentTimeChange(event:Event):void {
-			lbTime.text = ''+myPlayer.currentTime;
+            lbTime.text = ''+myPlayer.currentTime/myPlayer.duration;
 		}
 	]]>
 	</fx:Script>

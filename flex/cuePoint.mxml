@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- http://blog.flexexamples.com/2009/05/26/listening-for-cue-point-events-on-a-spark-videoplayer-object-in-flex-gumbo/ -->
+<s:Application name="Spark_VideoPlayer_VideoElement_flVideoPlayer_cuePoint_test"
+        xmlns:fx="http://ns.adobe.com/mxml/2009"
+        xmlns:s="library://ns.adobe.com/flex/spark"
+        xmlns:mx="library://ns.adobe.com/flex/halo">
+ 
+    <fx:Script>
+        <![CDATA[
+            import fl.video.MetadataEvent;
+            import fl.video.VideoPlayer;
+            import spark.events.VideoEvent;
+ 
+            private function videoPlayer_metadataReceived(evt:VideoEvent):void {
+                var flashVideoPlayer:fl.video.VideoPlayer = videoPlayer.videoElement.mx_internal::videoPlayer as fl.video.VideoPlayer;
+                flashVideoPlayer.addEventListener(MetadataEvent.CUE_POINT, videoPlayer_cuePoint);
+            }
+ 
+            private function videoPlayer_cuePoint(evt:MetadataEvent):void {
+                var obj:Object = {};
+                obj.name = evt.info.name;
+                obj.time = evt.info.time;
+                obj.type = evt.info.type;
+                arrList.addItem(obj);
+            }
+        ]]>
+    </fx:Script>
+ 
+    <fx:Declarations>
+        <s:ArrayList id="arrList" />
+    </fx:Declarations>
+ 
+    <s:Panel id="panel"
+            horizontalCenter="0"
+            verticalCenter="0">
+        <s:layout>
+            <s:HorizontalLayout />
+        </s:layout>
+        <s:VideoPlayer id="videoPlayer"
+                source="http://helpexamples.com/flash/video/cuepoints.flv"
+                muted="true"
+                metadataReceived="videoPlayer_metadataReceived(event);" />
+        <mx:DataGrid id="dataGrid"
+                dataProvider="{arrList}"
+                height="100%">
+            <mx:columns>
+                <mx:DataGridColumn dataField="name" />
+                <mx:DataGridColumn dataField="time" />
+                <mx:DataGridColumn dataField="type" />
+            </mx:columns>
+        </mx:DataGrid>
+    </s:Panel>
+ 
+</s:Application>
