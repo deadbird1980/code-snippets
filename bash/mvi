@@ -23,7 +23,7 @@ if [ $# -lt 1 ]; then
   usage
 fi
 
-while getopts rv:i:c:s:b:o option
+while getopts r:v:i:c:s:b:o option
 do
 case "${option}"
 in
@@ -53,23 +53,29 @@ if [ -z "$color" ]; then
 fi
 
 bgcolor=${bgcolor:-black}
+#default rate when no change for image
+rate=${rate:-1/5}
 
 title="${vfile%.*}"
 width=$(identify -format "%w" $image)
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
+duration=$(ffprobe -i $video -show_entries format=duration -v quiet -of csv="p=0")
 echo "image width=${width}"
 MIN_FONT_SIZE=20
 fontsize=$(round $width/$chars 0)
 wwidth=$(echo "$chars*$MIN_FONT_SIZE" | bc -l)
 if [ ! -z "$only" ]; then
-  ffmpeg -r 1/2 -loop 1 -i "$image" -i "$video" -c:v libx264 -tune stillimage -c:a aac  -pix_fmt yuv420p -shortest -vf "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2" $title.mp4
+  ffmpeg -r $rate -loop 1 -i "$image" -i "$video" -c:v libx264 -tune stillimage -c:a aac  -pix_fmt yuv420p -vf "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2" -t $duration -shortest $title.mp4
   exit
 fi
+
+# enough space to show text
 if [ "$wwidth" -lt "$width" ]; then
-  ffmpeg -loop 1 -i "$image" -i "$video" -c:v libx264 -tune stillimage -c:a aac  -pix_fmt yuv420p -shortest -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -vf "drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
+  ffmpeg -r $rate -loop 1 -i "$image" -i "$video" -c:v libx264 -tune stillimage -c:a aac  -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8,pad=ceil(iw/2)*2:ceil(ih/2)*2" $title.mp4
 else
   #crop=floor(iw/2)*2:floor(ih/2)*2 
   fontsize=MIN_FONT_SIZE
-  ffmpeg -loop 1 -i "$image" -i "$video" -c:v libx264 -tune stillimage -c:a aac  -pix_fmt yuv420p -shortest -vf "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2" -vf "drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
+  rate=1
+  ffmpeg -r $rate -loop 1 -i "$image" -i "$video" -c:v libx264 -tune stillimage -c:a aac  -pix_fmt yuv420p -t $duration -shortest -vf "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2,drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
 fi
 
