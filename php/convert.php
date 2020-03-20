@@ -161,6 +161,55 @@ function convert() {
           $activity['prompt'] = $prompt;
           $activities[] = $activity;
         }
+      } else if (strpos($content->type, 'DTOSectionPartitionPassageITP') != false) {
+        $q_index = 0;
+        foreach($content->data->contents as $c) {
+          if (strpos($c->type, 'DTOQuestionUnitPassageITP') == false) {
+            continue;
+          }
+          $activity = array();
+          $activity['activity_name'] = 'shared_text_one_of_many_text';
+          $prompt = array();
+          $stimulus = array();
+          $questions = array();
+          $prompt['shuffle'] = false;
+
+          // add master data into stimulus.instruction
+          $stimulus['instruction'] = 'Read the text and answer the questions.';
+          $paragraphs = $c->data->passage->data->paragraphs;
+          $text = '';
+          foreach($paragraphs as $i => $p) {
+            $text .= "<p><b>Paragraph ".($i+1)."</b>".$p->data->text."</p>";
+          }
+          $stimulus['text'] = $text;
+          foreach($c->data->questions as $q) {
+            $q = $q->data;
+            $question = array();
+            $question['shuffle'] = true;
+            $question['marker'] = 1;
+            $choices = array();
+            $question['explanation'] = $q->explanation->data->text->data->studyLanguage;
+            $question['question'] = array("text"=>$q->questionBody);
+            $correct = $q->correctAnswer->data->optionIdentifier;
+            foreach($q->options as $option) {
+              $choice = array();
+              $choice['text'] = $option->data->text;
+              if ($correct == $option->data->identifier) {
+                $choice['correct'] = true;
+              } else {
+                $choice['correct'] = false;
+              }
+              $choices[] = $choice;
+            }
+            $question['choices'] = $choices;
+            $questions[] = $question;
+          }
+          $q_index++;
+          $prompt['questions'] = $questions;
+          $activity['prompt'] = $prompt;
+          $activity['stimulus'] = $stimulus;
+          $activities[] = $activity;
+        }
       }
     }
     $stage['activities'] = $activities;
