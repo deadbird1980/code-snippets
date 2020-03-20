@@ -65,15 +65,100 @@ function convert() {
         }
         $prompt['questions'] = $questions;
         $activity['prompt'] = $prompt;
+        $activities[] = $activity;
+      } else if (strpos($content->type, 'DTOSectionPartitionAcademicTalkITP') != false || strpos($content->type, 'DTOSectionPartitionExtendedConversationITP') != false) {
+        $q_index = 0;
+        foreach($content->data->contents as $c) {
+          if (strpos($c->type, 'DTOQuestionUnitAcademicTalkITP') == false && strpos($c->type, 'DTOQuestionUnitExtendedConversationITP') == false) {
+            continue;
+          }
+          $activity = array();
+          $activity['activity_name'] = 'shared_audio_one_of_many_text';
+          $prompt = array();
+          $stimulus = array();
+          $questions = array();
+          $prompt['shuffle'] = false;
+
+          // add master data into stimulus.instruction
+          $stimulus['instruction'] = 'Listen to the conversation and answer the questions.';
+          $stimulus['audio'] = array("transcript"=>"*", "source"=>$c->audio->data->resource->data->resourceID);
+          foreach($c->data->questions as $q) {
+            $q = $q->data;
+            $question = array();
+            $question['shuffle'] = true;
+            $question['marker'] = 1;
+            $choices = array();
+            $question['explanation'] = $q->explanation->data->text->data->studyLanguage;
+            $correct = $q->correctAnswer->data->optionIdentifier;
+            foreach($q->options as $option) {
+              $choice = array();
+              $choice['text'] = $option->data->text;
+              if ($correct == $option->data->identifier) {
+                $choice['correct'] = true;
+              } else {
+                $choice['correct'] = false;
+              }
+              $choices[] = $choice;
+            }
+            $question['question'] = array("text" => "Question $q_index");
+            $question['choices'] = $choices;
+            $questions[] = $question;
+          }
+          $q_index++;
+          $prompt['questions'] = $questions;
+          $activity['prompt'] = $prompt;
+          $activities[] = $activity;
+        }
+      } else if (strpos($content->type, 'DTOQuestionUnitErrorRecognitionITP') != false || strpos($content->type, 'DTOQuestionUnitErrorRecognitionITP') != false) {
+        $q_index = 0;
+        foreach($content->data->contents as $c) {
+          if (strpos($c->type, 'DTOQuestionUnitErrorRecognitionITP') == false && strpos($c->type, 'DTOQuestionUnitSentenceCompletionITP') == false) {
+            continue;
+          }
+          $activity = array();
+          $activity['activity_name'] = 'text_with_gap_one_of_many';
+          $prompt = array();
+          $questions = array();
+          $prompt['shuffle'] = false;
+
+          // add master data into stimulus.instruction
+          $stimulus['instruction'] = 'Listen to the conversation and answer the questions.';
+          $stimulus['audio'] = array("transcript"=>"*", "source"=>$c->audio->data->resource->data->resourceID);
+          foreach($c->data->questions as $q) {
+            $q = $q->data;
+            $question = array();
+            $question['shuffle'] = true;
+            $question['marker'] = 1;
+            $choices = array();
+            $question['explanation'] = $q->explanation->data->text->data->studyLanguage;
+            $correct = $q->correctAnswer->data->optionIdentifier;
+            foreach($q->options as $option) {
+              $choice = array();
+              $choice['text'] = $option->data->text;
+              if ($correct == $option->data->identifier) {
+                $choice['correct'] = true;
+              } else {
+                $choice['correct'] = false;
+              }
+              $choices[] = $choice;
+            }
+            $question['question'] = array("text" => "Question $q_index");
+            $question['choices'] = $choices;
+            $questions[] = $question;
+          }
+          $q_index++;
+          $prompt['questions'] = $questions;
+          $activity['prompt'] = $prompt;
+          $activities[] = $activity;
+        }
       }
-      $activities[] = $activity;
     }
     $stage['activities'] = $activities;
     $section['stages'][] = $stage;
     $sections[] = $section;
   }
   $lesson['sections'] = $sections;
-  print_r($lesson['sections'][0]['stages'][0]['activities'][0]);
+  print json_encode($lesson);
 }
 convert();
 
