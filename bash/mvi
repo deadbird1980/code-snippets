@@ -2,6 +2,10 @@
 # the function "round()" was taken from
 # http://stempell.com/2009/08/rechnen-in-bash/
 
+#ffmpeg -i v.mp4 -i logo.png -i a.mp3 -filter_complex "[0:v]scale=720:-2,crop=min(500\,min(iw\,ih)):min(500\,min(iw\,ih))[bg];[bg][1:v] overlay=(W-w)/2:(H-h)/2" -pix_fmt yuv420p -map 2:a -shortest o.mp4
+#ffmpeg -y -i 1.mpeg -i 2.mpeg -i 3.mpeg -i 4.mpeg -filter_complex '[0:v][1:v][2:v][3:v] concat=n=4:v=1 [v]' -map '[v]' -c:v libx264 -s 1280x720 -aspect 16:9 -q:v 1 -pix_fmt yuv420p o.mp4
+#ffmpeg -i i.mp4 -i i.png -filter_complex "[1:v]format=rgba,fade=in:st=1:d=3:alpha=1,fade=out:st=6:d=3:alpha=1 [ovr]; [0][ovr] overlay" -codec:a copy O.mp4
+
 # the round function:
 round()
 {
@@ -15,7 +19,9 @@ usage()
   echo "-c font color"
   echo "-s font size"
   echo "-b background color"
-  echo "usage: RELEASE=15 LANG=2 pe7 merge_translate"
+  echo "-l landscape"
+  echo "-d duration"
+  echo "usage: mvi"
   echo "mvi -a audio -i image -c fontcolor"
   exit
 }
@@ -23,7 +29,7 @@ if [ $# -lt 1 ]; then
   usage
 fi
 
-while getopts r:a:i:c:s:b:o option
+while getopts r:a:d:i:c:s:b:ol option
 do
 case "${option}"
 in
@@ -33,7 +39,9 @@ c) color=${OPTARG};;
 s) fontsize=${OPTARG};;
 b) bgcolor=${OPTARG};;
 r) rate=${OPTARG};;
+d) duration=${OPTARG};;
 o) only="true";;
+l) landscape="true";;
 esac
 done
 
@@ -57,31 +65,47 @@ bgcolor=${bgcolor:-black}
 rate=${rate:-1/5}
 
 title="${afile%.*}"
-width=$(identify -format "%w" $image)
+width=$(ffprobe -v quiet -print_format json -show_streams $image | grep 'coded_width' | grep -Eo '[0-9]+')
+height=$(round $width/16*9 0)
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
-duration=$(ffprobe -i $audio -show_entries format=duration -v quiet -of csv="p=0")
+if [ -z "$duration" ]; then
+  duration=$(ffprobe -i $audio -show_entries format=duration -v quiet -of csv="p=0")
+fi
 bitrate=$(ffprobe -i $audio -show_entries format=bit_rate -v quiet -of csv="p=0")
-echo "image width=${width}"
+echo "image width=${width} height=${height}"
 
 audio_option="-acodec copy"
 #audio_option="-c:a aac -b:a $bitrate"
 audio_option="-c:a aac -b:a $bitrate"
+#ffmpeg -r 60 -f image2 -s 1280x720 -i pic%05d.png -i MP3FILE.mp3 -vcodec libx264 -b 4M -vpre normal -acodec copy OUTPUT.mp4 
 
 MIN_FONT_SIZE=20
 fontsize=$(round $width/$chars 0)
 wwidth=$(echo "$chars*$MIN_FONT_SIZE" | bc -l)
+
+#2160p: 3840x2160 1440p: 2560x1440 1080p: 1920x1080 720p: 1280x720
+#480p: 854x480 360p: 640x360 240p: 426x240
+#https://stackoverflow.com/questions/30789367/ffmpeg-how-to-convert-vertical-video-with-black-sides-to-video-169-with-blur
+land=""
+if [ ! -z "$landscape" ]; then
+  land=",split[original][copy];[copy]scale=ih*16/9:-1,crop=h=iw*9/16,gblur=sigma=20[blurred];[blurred][original]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2"
+fi
+
+scale="pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2"
+if [[ "$image" == *"%"* ]]; then
+  scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
+fi
+
 if [ ! -z "$only" ]; then
-  ffmpeg -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2" -t $duration -shortest $title.mp4
-  exit
-fi
-
-# enough space to show text
-if [ "$wwidth" -lt "$width" ]; then
-  ffmpeg -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option  -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8,pad=ceil(iw/2)*2:ceil(ih/2)*2" $title.mp4
+  ffmpeg -v quiet -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -t $duration -shortest $title.mp4
 else
-  #crop=floor(iw/2)*2:floor(ih/2)*2 
-  fontsize=MIN_FONT_SIZE
-  rate=1
-  ffmpeg -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2,drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
+  # enough space to show text
+  if [ "$wwidth" -lt "$width" ]; then
+    ffmpeg -v quiet -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" $title.mp4
+  else
+    #crop=floor(iw/2)*2:floor(ih/2)*2 
+    fontsize=MIN_FONT_SIZE
+    rate=1
+    ffmpeg -v quiet -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
+  fi
 fi
-
