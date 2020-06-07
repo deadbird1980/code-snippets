@@ -50,12 +50,14 @@ if [ -z "$audio" ]; then
   usage
 fi
 
+afile=$(basename $audio)
+title="${afile%.*}"
 if [ -z "$image" ]; then
-  echo "no image file"
-  usage
+  DESC=$(date +%s)
+  ffmpeg -i $audio -metadata --title="$title" -metadata --description="$DESC" -c copy $DESC.mp3
+  exit
 fi
 
-afile=$(basename $audio)
 if [ -z "$color" ]; then
   color="white"
 fi
@@ -64,8 +66,8 @@ bgcolor=${bgcolor:-black}
 #default rate when no change for image
 rate=${rate:-1/5}
 
-title="${afile%.*}"
 width=$(ffprobe -v quiet -print_format json -show_streams $image | grep 'coded_width' | grep -Eo '[0-9]+')
+#ffmpeg -i a.jpg -vf scale=640:480 b.jpg
 height=$(round $width/16*9 0)
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
 if [ -z "$duration" ]; then
