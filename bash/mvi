@@ -21,7 +21,11 @@ usage()
   echo "-b background color"
   echo "-l landscape"
   echo "-d duration"
+  echo "-n number"
   echo "usage: mvi"
+  echo "mvi -a audio       change metadata"
+  echo "mvi -a audio -n 2  break into 2 files"
+  echo "mvi -i img%02.jpg  images to video"
   echo "mvi -a audio -i image -c fontcolor"
   exit
 }
@@ -29,7 +33,7 @@ if [ $# -lt 1 ]; then
   usage
 fi
 
-while getopts r:a:d:i:c:s:b:ol option
+while getopts n:r:a:d:i:c:s:b:ol option
 do
 case "${option}"
 in
@@ -39,6 +43,7 @@ c) color=${OPTARG};;
 s) fontsize=${OPTARG};;
 b) bgcolor=${OPTARG};;
 r) rate=${OPTARG};;
+n) number=${OPTARG};;
 d) duration=${OPTARG};;
 o) only="true";;
 l) landscape="true";;
@@ -53,8 +58,15 @@ fi
 afile=$(basename "$audio")
 title=${afile%.*}
 if [ -z "$image" ]; then
-  DESC=$(date +%s)
- ffmpeg -i "$audio" -metadata --title="$title" -metadata --description="$DESC" -c copy "$DESC-$audio"
+  if [ -z "$number" ]; then
+    DESC=$(date +%s)
+    ffmpeg -i "$audio" -metadata --title="$title" -metadata --description="$DESC" -c copy "$DESC-$audio"
+  else
+    duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
+    duration=${duration%.*}
+    duration=$(((duration+number-1)/number))
+    ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 $title-%02d.mp3
+  fi
   exit
 fi
 
