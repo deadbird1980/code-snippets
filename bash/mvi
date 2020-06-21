@@ -50,11 +50,11 @@ if [ -z "$audio" ]; then
   usage
 fi
 
-afile=$(basename $audio)
-title="${afile%.*}"
+afile=$(basename "$audio")
+title=${afile%.*}
 if [ -z "$image" ]; then
   DESC=$(date +%s)
-  ffmpeg -i $audio -metadata --title="$title" -metadata --description="$DESC" -c copy $DESC.mp3
+ ffmpeg -i "$audio" -metadata --title="$title" -metadata --description="$DESC" -c copy "$DESC-$audio"
   exit
 fi
 
@@ -71,9 +71,9 @@ width=$(ffprobe -v quiet -print_format json -show_streams $image | grep 'coded_w
 height=$(round $width/16*9 0)
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
 if [ -z "$duration" ]; then
-  duration=$(ffprobe -i $audio -show_entries format=duration -v quiet -of csv="p=0")
+  duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
 fi
-bitrate=$(ffprobe -i $audio -show_entries format=bit_rate -v quiet -of csv="p=0")
+bitrate=$(ffprobe -i "$audio" -show_entries format=bit_rate -v quiet -of csv="p=0")
 echo "image width=${width} height=${height}"
 
 audio_option="-acodec copy"
@@ -98,16 +98,18 @@ if [[ "$image" == *"%"* ]]; then
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
 fi
 
+text="${title//%/\\\\\\\\%}"
+#drawtext=enable='between(t,12,3*60)'
 if [ ! -z "$only" ]; then
-  ffmpeg -v quiet -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -t $duration -shortest $title.mp4
+  ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -t $duration -shortest "$title.mp4"
 else
   # enough space to show text
   if [ "$wwidth" -lt "$width" ]; then
-    ffmpeg -v quiet -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" $title.mp4
+    ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text="${text}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" $title.mp4
   else
     #crop=floor(iw/2)*2:floor(ih/2)*2 
     fontsize=MIN_FONT_SIZE
     rate=1
-    ffmpeg -v quiet -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text="${title}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
+    ffmpeg -v error -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text="${text}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
   fi
 fi
