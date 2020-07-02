@@ -65,7 +65,7 @@ if [ -z "$image" ]; then
     duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
     duration=${duration%.*}
     duration=$(((duration+number-1)/number))
-    ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 $title-%02d.mp3
+    ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 "$title-%02d.mp3"
   fi
   exit
 fi
@@ -117,11 +117,11 @@ if [ ! -z "$only" ]; then
 else
   # enough space to show text
   if [ "$wwidth" -lt "$width" ]; then
-    ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text="${text}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" $title.mp4
+    ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title.mp4"
   else
     #crop=floor(iw/2)*2:floor(ih/2)*2 
     fontsize=MIN_FONT_SIZE
     rate=1
-    ffmpeg -v error -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text="${text}":fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" $title.mp4
+    ffmpeg -v error -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" "$title.mp4"
   fi
 fi
