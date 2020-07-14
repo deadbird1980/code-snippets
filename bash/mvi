@@ -69,7 +69,7 @@ if [ -z "$image" ]; then
   else
     duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
     duration=${duration%.*}
-    duration=$(((duration+number-1)/number))
+    duration=$(((duration+number-1)/number+1))
     ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 "$title-%02d.mp3"
   fi
   exit
