@@ -27,6 +27,11 @@ usage()
   echo "mvi -a audio -n 2  break into 2 files"
   echo "mvi -i img%02.jpg  images to video"
   echo "mvi -a audio -i image -c fontcolor"
+  echo ""
+  echo ""
+  echo "input file format:"
+  echo "file '001.jpg'"
+  echo "duration 10"
   exit
 }
 if [ $# -lt 1 ]; then
@@ -67,6 +72,11 @@ if [ -z "$image" ]; then
     duration=$(((duration+number-1)/number))
     ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 "$title-%02d.mp3"
   fi
+  exit
+fi
+
+if [[ "$image" == *".txt"* ]]; then
+  ffmpeg -v error -f concat -safe 0 -i "$image" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -crf 23 -r 24 -shortest -y "$title.mp4"
   exit
 fi
 
