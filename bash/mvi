@@ -5,6 +5,7 @@
 #ffmpeg -i v.mp4 -i logo.png -i a.mp3 -filter_complex "[0:v]scale=720:-2,crop=min(500\,min(iw\,ih)):min(500\,min(iw\,ih))[bg];[bg][1:v] overlay=(W-w)/2:(H-h)/2" -pix_fmt yuv420p -map 2:a -shortest o.mp4
 #ffmpeg -y -i 1.mpeg -i 2.mpeg -i 3.mpeg -i 4.mpeg -filter_complex '[0:v][1:v][2:v][3:v] concat=n=4:v=1 [v]' -map '[v]' -c:v libx264 -s 1280x720 -aspect 16:9 -q:v 1 -pix_fmt yuv420p o.mp4
 #ffmpeg -i i.mp4 -i i.png -filter_complex "[1:v]format=rgba,fade=in:st=1:d=3:alpha=1,fade=out:st=6:d=3:alpha=1 [ovr]; [0][ovr] overlay" -codec:a copy O.mp4
+shopt -s extglob
 
 # the round function:
 round()
@@ -26,6 +27,8 @@ usage()
   echo "mvi -a audio       change metadata"
   echo "mvi -a audio -n 2  break into 2 files"
   echo "mvi -i img%02.jpg  images to video"
+  echo "mvi -a audio%.mp3  merge audio"
+  echo "mvi -a video%.mp4  merge video"
   echo "mvi -a audio -i image -c fontcolor"
   echo ""
   echo ""
@@ -63,6 +66,16 @@ fi
 afile=$(basename "$audio")
 title=${afile%.*}
 if [ -z "$image" ]; then
+  if [[ "$audio" == *"%"* ]]; then
+    audio=${audio//%/*}
+    files=($audio)
+    echo ${#files[@]}
+    f=${files[1]}
+    ext="${f##*.}"
+    ffmpeg -safe 0 -f concat -i <(for f in $audio; do echo "file '$PWD/$f'"; done) -c copy merged.$ext
+    exit
+  fi
+
   if [ -z "$number" ]; then
     DESC=$(date +%s)
     ffmpeg -i "$audio" -metadata --title="$title" -metadata --description="$DESC" -c copy "$DESC-$audio"
