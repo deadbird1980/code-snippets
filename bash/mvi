@@ -5,6 +5,7 @@
 #ffmpeg -i v.mp4 -i logo.png -i a.mp3 -filter_complex "[0:v]scale=720:-2,crop=min(500\,min(iw\,ih)):min(500\,min(iw\,ih))[bg];[bg][1:v] overlay=(W-w)/2:(H-h)/2" -pix_fmt yuv420p -map 2:a -shortest o.mp4
 #ffmpeg -y -i 1.mpeg -i 2.mpeg -i 3.mpeg -i 4.mpeg -filter_complex '[0:v][1:v][2:v][3:v] concat=n=4:v=1 [v]' -map '[v]' -c:v libx264 -s 1280x720 -aspect 16:9 -q:v 1 -pix_fmt yuv420p o.mp4
 #ffmpeg -i i.mp4 -i i.png -filter_complex "[1:v]format=rgba,fade=in:st=1:d=3:alpha=1,fade=out:st=6:d=3:alpha=1 [ovr]; [0][ovr] overlay" -codec:a copy O.mp4
+#ffmpeg -y -loglevel warning -i 5sec_640x480.mp4 -i 5sec_1920x1080.mp4 -filter_complex " [0:v] scale=w=min(iw*480/ih\,640):h=min(480\,ih*640/iw), pad=w=640:h=480:x=(640-iw)/2:y=(480-ih)/2  [video0]; [1:v] scale=w=min(iw*480/ih\,640):h=min(480\,ih*640/iw), pad=w=640:h=480:x=(640-iw)/2:y=(480-ih)/2  [video1]; [0:a] anull [audio0]; [1:a] anull [audio1]; [video0][audio0][video1][audio1] concat=n=2:v=1:a=1 [v][a] " -map "[v]" -map "[a]" -c:a aac -c:v h264 -crf 18 -preset veryfast -f mp4 output.mp4
 shopt -s extglob
 
 # the round function:
@@ -88,33 +89,36 @@ if [ -z "$image" ]; then
   exit
 fi
 
-if [[ "$image" == *".txt"* ]]; then
-  ffmpeg -v error -f concat -safe 0 -i "$image" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -crf 23 -r 24 -shortest -y "$title.mp4"
-  exit
-fi
-
-if [ -z "$color" ]; then
-  color="white"
-fi
-
-bgcolor=${bgcolor:-black}
 #default rate when no change for image
 rate=${rate:-1/5}
+
+if [ -z "$duration" ]; then
+  duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
+fi
+bitrate=$(ffprobe -i "$audio" -show_entries format=bit_rate -v quiet -of csv="p=0")
+
+if [[ "$image" == *".txt"* ]]; then
+  width=640
+  height=480
+  scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
+  ffmpeg -v error -f concat -safe 0 -i "$image" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -crf 28 -r $rate -t $duration -shortest -y "$title.mp4"
+  exit
+fi
 
 width=$(ffprobe -v quiet -print_format json -show_streams $image | grep 'coded_width' | grep -Eo '[0-9]+')
 #ffmpeg -i a.jpg -vf scale=640:480 b.jpg
 height=$(round $width/16*9 0)
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
-if [ -z "$duration" ]; then
-  duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
-fi
-bitrate=$(ffprobe -i "$audio" -show_entries format=bit_rate -v quiet -of csv="p=0")
 echo "image width=${width} height=${height}"
 
 audio_option="-acodec copy"
 #audio_option="-c:a aac -b:a $bitrate"
 audio_option="-c:a aac -b:a $bitrate"
 #ffmpeg -r 60 -f image2 -s 1280x720 -i pic%05d.png -i MP3FILE.mp3 -vcodec libx264 -b 4M -vpre normal -acodec copy OUTPUT.mp4 
+bgcolor=${bgcolor:-black}
+if [ -z "$color" ]; then
+  color="white"
+fi
 
 MIN_FONT_SIZE=20
 fontsize=$(round $width/$chars 0)
