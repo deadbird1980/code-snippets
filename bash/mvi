@@ -27,7 +27,7 @@ usage()
   echo "usage: mvi"
   echo "mvi -a audio       change metadata"
   echo "mvi -a audio -n 2  break into 2 files"
-  echo "mvi -i img%02.jpg  images to video"
+  echo "mvi -i img%02d.jpg  images to video"
   echo "mvi -a audio%.mp3  merge audio"
   echo "mvi -a video%.mp4  merge video"
   echo "mvi -a audio -i image -c fontcolor"
@@ -105,9 +105,13 @@ if [[ "$image" == *".txt"* ]]; then
   exit
 fi
 
-width=$(ffprobe -v quiet -print_format json -show_streams $image | grep 'coded_width' | grep -Eo '[0-9]+')
+eval $(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1 $image)
 #ffmpeg -i a.jpg -vf scale=640:480 b.jpg
-height=$(round $width/16*9 0)
+#Padded dimensions cannot be smaller than input dimensions.
+h=$(round $width/16*9 0)
+if (($h < $height )); then
+  width=$(round $height/9*16 0)
+fi
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
 echo "image width=${width} height=${height}"
 
@@ -140,7 +144,7 @@ fi
 text="${title//%/\\\\\\\\%}"
 #drawtext=enable='between(t,12,3*60)'
 if [ ! -z "$only" ]; then
-  ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -t $duration -shortest "$title.mp4"
+  ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -crf 28 -t $duration -shortest "$title.mp4"
 else
   # enough space to show text
   if [ "$wwidth" -lt "$width" ]; then
