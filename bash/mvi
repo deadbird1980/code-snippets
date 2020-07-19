@@ -84,7 +84,8 @@ if [ -z "$image" ]; then
     duration=$(ffprobe -i "$audio" -show_entries format=duration -v quiet -of csv="p=0")
     duration=${duration%.*}
     duration=$(((duration+number-1)/number+1))
-    ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 "$title-%02d.mp3"
+    ext="${audio##*.}"
+    ffmpeg -i "$audio" -f segment -segment_time $duration -codec copy -reset_timestamps 1 -segment_start_number 1 "$title-%02d.$ext"
   fi
   exit
 fi
@@ -108,10 +109,6 @@ fi
 eval $(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1 $image)
 #ffmpeg -i a.jpg -vf scale=640:480 b.jpg
 #Padded dimensions cannot be smaller than input dimensions.
-h=$(round $width/16*9 0)
-if (($h < $height )); then
-  width=$(round $height/9*16 0)
-fi
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
 echo "image width=${width} height=${height}"
 
@@ -124,9 +121,10 @@ if [ -z "$color" ]; then
   color="white"
 fi
 
-MIN_FONT_SIZE=20
-fontsize=$(round $width/$chars 0)
-wwidth=$(echo "$chars*$MIN_FONT_SIZE" | bc -l)
+MIN_FONT_SIZE=14
+GAP=20
+fontsize=$(round "($width-$GAP)/$chars" 0)
+echo "fontsize=$fontsize"
 
 #2160p: 3840x2160 1440p: 2560x1440 1080p: 1920x1080 720p: 1280x720
 #480p: 854x480 360p: 640x360 240p: 426x240
@@ -138,6 +136,10 @@ fi
 
 scale="pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2"
 if [[ "$image" == *"%"* ]]; then
+  h=$(round $width/16*9 0)
+  if (($h < $height )); then
+    width=$(round $height/9*16 0)
+  fi
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
 fi
 
@@ -147,7 +149,7 @@ if [ ! -z "$only" ]; then
   ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -crf 28 -t $duration -shortest "$title.mp4"
 else
   # enough space to show text
-  if [ "$wwidth" -lt "$width" ]; then
+  if [ "$fontsize" -ge "$MIN_FONT_SIZE" ]; then
     ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title.mp4"
   else
     #crop=floor(iw/2)*2:floor(ih/2)*2 
