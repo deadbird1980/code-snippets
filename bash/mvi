@@ -24,6 +24,7 @@ usage()
   echo "-l landscape"
   echo "-d duration"
   echo "-n number"
+  echo "-t text"
   echo "usage: mvi"
   echo "mvi -a audio       change metadata"
   echo "mvi -a audio -n 2  break into 2 files"
@@ -42,7 +43,7 @@ if [ $# -lt 1 ]; then
   usage
 fi
 
-while getopts n:r:a:d:i:c:s:b:ol option
+while getopts t:n:r:a:d:i:c:s:b:ol option
 do
 case "${option}"
 in
@@ -52,6 +53,7 @@ c) color=${OPTARG};;
 s) fontsize=${OPTARG};;
 b) bgcolor=${OPTARG};;
 r) rate=${OPTARG};;
+t) text=${OPTARG};;
 n) number=${OPTARG};;
 d) duration=${OPTARG};;
 o) only="true";;
@@ -77,6 +79,11 @@ if [ -z "$image" ]; then
     exit
   fi
 
+  if [ ! -z "$text" ]; then
+    ffmpeg -v error -i "$audio" -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title-text.mp4"
+    exit
+  fi
+  # split
   if [ -z "$number" ]; then
     DESC=$(date +%s)
     ffmpeg -i "$audio" -metadata --title="$title" -metadata --description="$DESC" -c copy "$DESC-$audio"
@@ -143,18 +150,23 @@ if [[ "$image" == *"%"* ]]; then
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
 fi
 
+image_option=" -r $rate -f image2 -loop 1 "
+if [[ "$image" == *".gif"* ]]; then
+  image_option=" -ignore_loop 0"
+fi
+
 text="${title//%/\\\\\\\\%}"
 #drawtext=enable='between(t,12,3*60)'
 if [ ! -z "$only" ]; then
-  ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -crf 28 -t $duration -shortest "$title.mp4"
+  ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -crf 28 -t $duration -shortest "$title.mp4"
 else
   # enough space to show text
   if [ "$fontsize" -ge "$MIN_FONT_SIZE" ]; then
-    ffmpeg -v error -r $rate -f image2 -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title.mp4"
+    ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title.mp4"
   else
     #crop=floor(iw/2)*2:floor(ih/2)*2 
     fontsize=MIN_FONT_SIZE
     rate=1
-    ffmpeg -v error -r $rate -loop 1 -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" "$title.mp4"
+    ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" "$title.mp4"
   fi
 fi
