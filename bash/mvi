@@ -61,13 +61,14 @@ l) landscape="true";;
 esac
 done
 
-if [ -z "$audio" ]; then
-  echo "no audio file"
-  usage
-fi
 
-afile=$(basename "$audio")
-title=${afile%.*}
+FONT_FILE="/Library/Fonts/Arial Unicode.ttf"
+if [ -z "$audio" ]; then
+  file=$(basename "$image")
+else
+  file=$(basename "$audio")
+fi
+title=${file%.*}
 if [ -z "$image" ]; then
   if [[ "$audio" == *"%"* ]]; then
     audio=${audio//%/*}
@@ -80,7 +81,7 @@ if [ -z "$image" ]; then
   fi
 
   if [ ! -z "$text" ]; then
-    ffmpeg -v error -i "$audio" -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title-text.mp4"
+    ffmpeg -v error -i "$audio" -vf "drawtext=text='${text}':fontfile=${FONT_FILE}:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title-text.mp4"
     exit
   fi
   # split
@@ -133,6 +134,11 @@ GAP=20
 fontsize=$(round "($width-$GAP)/$chars" 0)
 echo "fontsize=$fontsize"
 
+if [ -z "$audio" ]; then
+  convert -font "$FONT_FILE" -pointsize 14 $image -fill white -undercolor '#00000080' -gravity South -annotate +0+5 "$title" "anno_$title.jpg"
+  exit
+fi
+
 #2160p: 3840x2160 1440p: 2560x1440 1080p: 1920x1080 720p: 1280x720
 #480p: 854x480 360p: 640x360 240p: 426x240
 #https://stackoverflow.com/questions/30789367/ffmpeg-how-to-convert-vertical-video-with-black-sides-to-video-169-with-blur
@@ -152,7 +158,8 @@ fi
 
 image_option=" -r $rate -f image2 -loop 1 "
 if [[ "$image" == *".gif"* ]]; then
-  image_option=" -ignore_loop 0"
+  $rate=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1)
+  image_option="-r $rate -ignore_loop 0"
 fi
 
 text="${title//%/\\\\\\\\%}"
@@ -162,11 +169,11 @@ if [ ! -z "$only" ]; then
 else
   # enough space to show text
   if [ "$fontsize" -ge "$MIN_FONT_SIZE" ]; then
-    ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title.mp4"
+    ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "drawtext=text='${text}':fontfile=$FONT_FILE:fontsize=${fontsize}:fontcolor=${color}@1:x=(w-text_w)/2:y=h-th-1:box=1:boxcolor=black@0.8:boxborderw=0,$scale" "$title.mp4"
   else
     #crop=floor(iw/2)*2:floor(ih/2)*2 
     fontsize=MIN_FONT_SIZE
     rate=1
-    ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text='${text}':fontfile=/Library/Fonts/Arial\ Unicode.ttf:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" "$title.mp4"
+    ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text='${text}':fontfile=$FONT_FILE:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" "$title.mp4"
   fi
 fi
