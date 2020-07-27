@@ -113,14 +113,28 @@ if [[ "$image" == *".txt"* ]]; then
   ffmpeg -v error -f concat -safe 0 -i "$image" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -crf 28 -r $rate -t $duration -shortest -y "$title.mp4"
   exit
 elif [[ "$image" == *".csv"* ]]; then
+  prev=""
   i=1
-  while IFS=, read -r ts file text
+  echo -n '' > f.srt
+  echo -n '' > f.txt
+  tail -n +2 $image|while IFS=, read -r ts file text
   do
-     test $i -eq 1 && ((i=i+1)) && continue
-    echo "timestamp : $ts"
-    echo "file : $file"
-    echo "text : $text"
-  done < $image
+    ((i=i+1))
+    if [[ -z "$prev" ]]; then
+      prev=$ts
+      echo "file $file" >> f.txt
+    else
+      echo $i >> f.srt
+      echo "$prev --> $ts" >> f.srt
+      echo "$text" >> f.srt
+      start=$(date -j -f "%H:%M.%S" "$prev" +%s)
+      end=$(date -j -f "%H:%M.%S" "$ts" +%s)
+      duration="$(( (end-start) ))"
+      echo "duration $duration" >> f.txt
+      echo "file $file" >> f.txt
+      prev=$ts
+    fi
+  done
   exit
 fi
 
