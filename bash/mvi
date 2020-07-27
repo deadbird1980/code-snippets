@@ -112,6 +112,16 @@ if [[ "$image" == *".txt"* ]]; then
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
   ffmpeg -v error -f concat -safe 0 -i "$image" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -crf 28 -r $rate -t $duration -shortest -y "$title.mp4"
   exit
+elif [[ "$image" == *".csv"* ]]; then
+  i=1
+  while IFS=, read -r ts file text
+  do
+     test $i -eq 1 && ((i=i+1)) && continue
+    echo "timestamp : $ts"
+    echo "file : $file"
+    echo "text : $text"
+  done < $image
+  exit
 fi
 
 eval $(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1 $image)
