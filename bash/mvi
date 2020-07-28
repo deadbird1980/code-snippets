@@ -32,11 +32,19 @@ usage()
   echo "mvi -a audio%.mp3  merge audio"
   echo "mvi -a video%.mp4  merge video"
   echo "mvi -a audio -i image -c fontcolor"
+  echo "mvi -i merge.csv -a audio image slides with text"
   echo ""
   echo ""
   echo "input file format:"
-  echo "file '001.jpg'"
-  echo "duration 10"
+  echo "concat.txt             concat.csv             concatv.txt"
+  echo "file '001.jpg'      timestamp,file,text       file '1.mp4'"
+  echo "duration 10         00:00:00,1.jpg,title      outpoint 00:01:00"
+  echo "                                              file '1.mp4'"
+  echo "                                              inpoint 00:10:00"
+  echo "                                              outpoint 01:10:00"
+  echo ""
+  echo "to merge video files first convert to same fps:"
+  echo "#ffmpeg -i i.mp4 -filter:v fps=30 -max_muxing_queue_size 1024 o.mp4"
   exit
 }
 if [ $# -lt 1 ]; then
@@ -110,9 +118,15 @@ if [[ "$image" == *".txt"* ]]; then
   width=640
   height=480
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
-  ffmpeg -v error -f concat -safe 0 -i "$image" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -crf 23 -t $duration -shortest -y "$title.mp4"
+  AOPTION=""
+  test ! -z $audio && AOPTION="-i \"$audio\""
+  ffmpeg -v error -f concat -safe 0 -i "$image" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -crf 23 -t $duration -shortest -y "$title.mp4"
   exit
 elif [[ "$image" == *".csv"* ]]; then
+  # -filter:v fps=60 -vcodec libx264 -c:a aac
+  # convert mp4 files to same fps
+  #ffmpeg -i i.mp4 -filter:v fps=30 -max_muxing_queue_size 1024 o.mp4
+  #ffmpeg -fflags +igndts -f concat -safe 0 -i concat.txt -vf 'scale=w=640:h=480:force_original_aspect_ratio=1,pad=640:480:(ow-iw)/2:(oh-ih)/2' concat.mp4
   prev=""
   i=0
   echo -n '' > f.srt
@@ -126,10 +140,10 @@ elif [[ "$image" == *".csv"* ]]; then
       echo "file $file" >> f.txt
     else
       echo $((i-1)) >> f.srt
-      echo "$prev --> $ts" >> f.srt
+      echo "$prev,000 --> $ts,000" >> f.srt
       echo "$prev_text" >> f.srt
-      start=$(date -j -f "%H:%M.%S" "$prev" +%s)
-      end=$(date -j -f "%H:%M.%S" "$ts" +%s)
+      start=$(date -j -f "%H:%M:%S" "$prev" +%s)
+      end=$(date -j -f "%H:%M:%S" "$ts" +%s)
       duration="$(( (end-start) ))"
       echo "duration $duration" >> f.txt
       test ! -z "$file" && echo "file $file" >> f.txt
@@ -138,6 +152,13 @@ elif [[ "$image" == *".csv"* ]]; then
     fi
     ((i=i+1))
   done < $image
+  width=640
+  height=480
+  scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
+  AOPTION=""
+  test ! -z $audio && AOPTION="-i \"$audio\""
+  ffmpeg -v error -f concat -safe 0 -i "f.txt" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -crf 23 -t $duration -shortest -y "$title.mp4"
+  ffmpeg -i "$title.mp4" -vf subtitles=f.srt -max_muxing_queue_size 1024 "s=$title.mp4"
   exit
 fi
 
