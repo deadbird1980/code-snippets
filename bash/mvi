@@ -6,6 +6,7 @@
 #ffmpeg -y -i 1.mpeg -i 2.mpeg -i 3.mpeg -i 4.mpeg -filter_complex '[0:v][1:v][2:v][3:v] concat=n=4:v=1 [v]' -map '[v]' -c:v libx264 -s 1280x720 -aspect 16:9 -q:v 1 -pix_fmt yuv420p o.mp4
 #ffmpeg -i i.mp4 -i i.png -filter_complex "[1:v]format=rgba,fade=in:st=1:d=3:alpha=1,fade=out:st=6:d=3:alpha=1 [ovr]; [0][ovr] overlay" -codec:a copy O.mp4
 #ffmpeg -y -loglevel warning -i 5sec_640x480.mp4 -i 5sec_1920x1080.mp4 -filter_complex " [0:v] scale=w=min(iw*480/ih\,640):h=min(480\,ih*640/iw), pad=w=640:h=480:x=(640-iw)/2:y=(480-ih)/2  [video0]; [1:v] scale=w=min(iw*480/ih\,640):h=min(480\,ih*640/iw), pad=w=640:h=480:x=(640-iw)/2:y=(480-ih)/2  [video1]; [0:a] anull [audio0]; [1:a] anull [audio1]; [video0][audio0][video1][audio1] concat=n=2:v=1:a=1 [v][a] " -map "[v]" -map "[a]" -c:a aac -c:v h264 -crf 18 -preset veryfast -f mp4 output.mp4
+#convert 1.jpg 2.jpg 3.jpg -resize 1000 -bordercolor white -border 12 \( -clone 0,1 +append \) -delete 0,1 \( -clone 0,1 +append \) -delete 0,1 -append -resize 1000 -quality 75 out.jpg
 shopt -s extglob
 
 # the round function:
@@ -144,8 +145,8 @@ elif [[ "$image" == *".csv"* ]]; then
       echo "$prev_text" >> f.srt
       start=$(date -j -f "%H:%M:%S" "$prev" +%s)
       end=$(date -j -f "%H:%M:%S" "$ts" +%s)
-      duration="$(( (end-start) ))"
-      echo "duration $duration" >> f.txt
+      dur="$(( (end-start) ))"
+      echo "duration $dur" >> f.txt
       test ! -z "$file" && echo "file $file" >> f.txt
       prev=$ts
       prev_text=$text
@@ -156,7 +157,7 @@ elif [[ "$image" == *".csv"* ]]; then
   height=480
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
   AOPTION=""
-  test ! -z $audio && AOPTION="-i \"$audio\""
+  test ! -z $audio && AOPTION="-i $audio"
   ffmpeg -v error -f concat -safe 0 -i "f.txt" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -crf 23 -t $duration -shortest -y "$title.mp4"
   ffmpeg -i "$title.mp4" -vf subtitles=f.srt -max_muxing_queue_size 1024 "s=$title.mp4"
   exit
@@ -169,7 +170,6 @@ chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
 echo "image width=${width} height=${height}"
 
 audio_option="-acodec copy"
-#audio_option="-c:a aac -b:a $bitrate"
 audio_option="-c:a aac -b:a $bitrate"
 #ffmpeg -r 60 -f image2 -s 1280x720 -i pic%05d.png -i MP3FILE.mp3 -vcodec libx264 -b 4M -vpre normal -acodec copy OUTPUT.mp4 
 bgcolor=${bgcolor:-black}
@@ -179,7 +179,11 @@ fi
 
 MIN_FONT_SIZE=14
 GAP=20
-fontsize=$(round "($width-$GAP)/$chars" 0)
+if [ -z "$fontsize" ]; then
+  fontsize=$(round "($width-$GAP)/$chars" 0)
+else
+  MIN_FONT_SIZE=$fontsize
+fi
 echo "fontsize=$fontsize"
 
 if [ -z "$audio" ]; then
