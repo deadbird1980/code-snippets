@@ -120,7 +120,7 @@ if [[ "$image" == *".txt"* ]]; then
   height=480
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
   AOPTION=""
-  test ! -z $audio && AOPTION="-i \"$audio\""
+  test ! -z $audio && AOPTION="-i $audio"
   ffmpeg -v error -f concat -safe 0 -i "$image" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -crf 23 -t $duration -shortest -y "$title.mp4"
   exit
 elif [[ "$image" == *".csv"* ]]; then
@@ -132,12 +132,15 @@ elif [[ "$image" == *".csv"* ]]; then
   i=0
   echo -n '' > f.srt
   echo -n '' > f.txt
+  echo -n '' > f.sh
+  has_gif=0
   while IFS=, read -r ts file text
   do
     test $i -eq 0 && ((i=i+1)) && continue
     if [[ -z "$prev" ]]; then
       prev=$ts
       prev_text=$text
+      prev_file=$file
       echo "file $file" >> f.txt
     else
       echo $((i-1)) >> f.srt
@@ -147,9 +150,18 @@ elif [[ "$image" == *".csv"* ]]; then
       end=$(date -j -f "%H:%M:%S" "$ts" +%s)
       dur="$(( (end-start) ))"
       echo "duration $dur" >> f.txt
+      if [[ "$prev_file" == *".gif"* ]]; then
+        has_gif=1
+        rate=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 $prev_file)
+        echo "rate=$rate"
+        echo "ffmpeg -ignore_loop 0 -i $prev_file -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -t $dur t-0$i.mp4" >> f.sh
+      else
+        echo "ffmpeg -v error -loop 1 -i "$prev_file" -c:v libx264 -tune stillimage -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -t $dur 't-0$i.mp4'" >> f.sh
+      fi
       test ! -z "$file" && echo "file $file" >> f.txt
       prev=$ts
       prev_text=$text
+      prev_file=$file
     fi
     ((i=i+1))
   done < $image
@@ -158,8 +170,13 @@ elif [[ "$image" == *".csv"* ]]; then
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
   AOPTION=""
   test ! -z $audio && AOPTION="-i $audio"
-  ffmpeg -v error -f concat -safe 0 -i "f.txt" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -crf 23 -t $duration -shortest -y "$title.mp4"
-  ffmpeg -i "$title.mp4" -vf subtitles=f.srt -max_muxing_queue_size 1024 "s=$title.mp4"
+  if [[ -z $has_gif ]]; then
+    ffmpeg -v error -f concat -safe 0 -i "f.txt" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -t $duration -shortest -y "$title.mp4"
+    ffmpeg -v error -i "$title.mp4" -vf subtitles=f.srt -max_muxing_queue_size 1024 "s-$title.mp4"
+  else
+    echo "ffmpeg -safe 0 -f concat -i <(for f in t-0*.mp4; do echo \"file '\$PWD/\$f'\"; done)  $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf '$scale' -r $rate -t $duration -shortest -y $title.mp4" >> f.sh
+    echo "ffmpeg -v error -i \"$title.mp4\" -vf subtitles=f.srt -max_muxing_queue_size 1024 \"s-$title.mp4\"" >> f.sh
+  fi
   exit
 fi
 
@@ -210,7 +227,7 @@ fi
 
 image_option=" -r $rate -f image2 -loop 1 "
 if [[ "$image" == *".gif"* ]]; then
-  $rate=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1)
+  rate=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 $image)
   image_option="-r $rate -ignore_loop 0"
 fi
 
