@@ -150,13 +150,14 @@ elif [[ "$image" == *".csv"* ]]; then
       end=$(date -j -f "%H:%M:%S" "$ts" +%s)
       dur="$(( (end-start) ))"
       echo "duration $dur" >> f.txt
+      printf -v num "%03d" $i
       if [[ "$prev_file" == *".gif"* ]]; then
         has_gif=1
         rate=$(ffprobe -v error -select_streams v:0 -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 $prev_file)
         echo "rate=$rate"
-        echo "ffmpeg -ignore_loop 0 -i $prev_file -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -t $dur t-0$i.mp4" >> f.sh
+        echo "ffmpeg -ignore_loop 0 -i $prev_file -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -t $dur t$num.mp4" >> f.sh
       else
-        echo "ffmpeg -v error -loop 1 -i "$prev_file" -c:v libx264 -tune stillimage -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -t $dur 't-0$i.mp4'" >> f.sh
+        echo "ffmpeg -v error -loop 1 -i "$prev_file" -c:v libx264 -tune stillimage -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' -t $dur 't_$num.mp4'" >> f.sh
       fi
       test ! -z "$file" && echo "file $file" >> f.txt
       prev=$ts
@@ -170,11 +171,11 @@ elif [[ "$image" == *".csv"* ]]; then
   scale="scale=w=$width:h=$height:force_original_aspect_ratio=1,pad=$width:$height:(ow-iw)/2:(oh-ih)/2"
   AOPTION=""
   test ! -z $audio && AOPTION="-i $audio"
-  if [[ -z $has_gif ]]; then
+  if [[ $has_gif -eq "0" ]]; then
     ffmpeg -v error -f concat -safe 0 -i "f.txt" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -t $duration -shortest -y "$title.mp4"
     ffmpeg -v error -i "$title.mp4" -vf subtitles=f.srt -max_muxing_queue_size 1024 "s-$title.mp4"
   else
-    echo "ffmpeg -safe 0 -f concat -i <(for f in t-0*.mp4; do echo \"file '\$PWD/\$f'\"; done)  $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf '$scale' -r $rate -t $duration -shortest -y $title.mp4" >> f.sh
+    echo "ffmpeg -safe 0 -f concat -i <(for f in t_*.mp4; do echo \"file '\$PWD/\$f'\"; done)  $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf '$scale' -r $rate -t $duration -shortest -y $title.mp4" >> f.sh
     echo "ffmpeg -v error -i \"$title.mp4\" -vf subtitles=f.srt -max_muxing_queue_size 1024 \"s-$title.mp4\"" >> f.sh
   fi
   exit
