@@ -181,7 +181,11 @@ elif [[ "$image" == *".csv"* ]]; then
   AOPTION=""
   test ! -z $audio && AOPTION="-i $audio"
   if [[ $has_gif -eq "0" ]]; then
-    ffmpeg -v error -f concat -safe 0 -i "f.txt" $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -t $duration -shortest -y "$title.mp4"
+    if [[ -z "$audio" ]]; then
+      ffmpeg -v error -f concat -safe 0 -i "f.txt" -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -t $duration -shortest -y "$title.mp4"
+    else
+      ffmpeg -v error -f concat -safe 0 -i "f.txt" -i "$audio" -c:v libx264 -c:a aac -pix_fmt yuv420p -vf "$scale" -r $rate -t $duration -shortest -y "$title.mp4"
+    fi
     ffmpeg -v error -i "$title.mp4" -vf subtitles=f.srt -max_muxing_queue_size 1024 "s-$title.mp4"
   else
     echo "ffmpeg -safe 0 -f concat -i <(for f in t_*.mp4; do echo \"file '\$PWD/\$f'\"; done)  $AOPTION -c:v libx264 -c:a aac -pix_fmt yuv420p -vf '$scale' -r $rate -t $duration -shortest -y $title.mp4" >> f.sh
