@@ -26,12 +26,14 @@ usage()
   echo "-d duration"
   echo "-n number"
   echo "-t text"
+  echo "-r resize"
   echo "usage: mvi"
   echo "mvi -a audio       change metadata"
   echo "mvi -a audio -n 2  break into 2 files"
   echo "mvi -i img%02d.jpg  images to video"
   echo "mvi -a audio%.mp3  merge audio"
   echo "mvi -a video%.mp4  merge video"
+  echo "mvi -a video%.mp4 -h 360  resize video"
   echo "mvi -a audio -i image -c fontcolor"
   echo "mvi -i merge.csv -a audio image slides with text"
   echo ""
@@ -52,7 +54,7 @@ if [ $# -lt 1 ]; then
   usage
 fi
 
-while getopts t:n:r:a:d:i:c:s:b:ol option
+while getopts t:n:r:a:d:i:c:s:b:h:ol option
 do
 case "${option}"
 in
@@ -62,6 +64,7 @@ c) color=${OPTARG};;
 s) fontsize=${OPTARG};;
 b) bgcolor=${OPTARG};;
 r) rate=${OPTARG};;
+h) height=${OPTARG};;
 t) text=${OPTARG};;
 n) number=${OPTARG};;
 d) duration=${OPTARG};;
@@ -78,6 +81,12 @@ else
   file=$(basename "$audio")
 fi
 title=${file%.*}
+
+if [ ! -z "$height" ]; then
+  ffmpeg -i $audio -vf scale=-2:$height resize_$title.mp4
+  exit
+fi
+
 if [ -z "$image" ]; then
   if [[ "$audio" == *"%"* ]]; then
     audio=${audio//%/*}
