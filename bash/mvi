@@ -54,7 +54,7 @@ if [ $# -lt 1 ]; then
   usage
 fi
 
-while getopts t:n:r:a:d:i:c:s:b:h:ol option
+while getopts q:t:n:r:a:d:i:c:s:b:h:ol option
 do
 case "${option}"
 in
@@ -68,6 +68,7 @@ h) height=${OPTARG};;
 t) text=${OPTARG};;
 n) number=${OPTARG};;
 d) duration=${OPTARG};;
+q) QR=${OPTARG};;
 o) only="true";;
 l) landscape="true";;
 esac
@@ -248,7 +249,7 @@ fi
 text="${title//%/\\\\\\\\%}"
 #drawtext=enable='between(t,12,3*60)'
 if [ ! -z "$only" ]; then
-  ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -crf 28 -t $duration -shortest "$title.mp4"
+  ffmpeg $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -vf "$scale$land" -t $duration -shortest "$title.mp4"
 else
   # enough space to show text
   if [ "$fontsize" -ge "$MIN_FONT_SIZE" ]; then
@@ -259,4 +260,8 @@ else
     rate=1
     ffmpeg -v error $image_option -i "$image" -i "$audio" -c:v libx264 -tune stillimage $audio_option -pix_fmt yuv420p -t $duration -shortest -vf "$scale,drawtext=text='${text}':fontfile=$FONT_FILE:fontsize=40:fontcolor=white@1:x=w-mod(50*t\, (w+text_w)):y=h-th-1:box=1:boxcolor=black@0.8" "$title.mp4"
   fi
+fi
+
+if [ ! -z "$QR" ]; then
+  ffmpeg -i $title.mp4 -i $QR -filter_complex '[1:v][0:v]scale2ref=oh:ih/5[v1][bk1];[bk1][v1]overlay=W-w-5:5' -max_muxing_queue_size 1024 QR-$title.mp4
 fi
