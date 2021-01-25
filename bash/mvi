@@ -30,6 +30,7 @@ usage()
   echo "usage: mvi"
   echo "mvi -a audio       change metadata"
   echo "mvi -a audio -n 2  break into 2 files"
+  echo "mvi -i img.jpg  scroll images to video"
   echo "mvi -i img%02d.jpg  images to video"
   echo "mvi -a audio%.mp3  merge audio"
   echo "mvi -a video%.mp4  merge video"
@@ -117,6 +118,19 @@ if [ -z "$image" ]; then
   exit
 fi
 
+eval $(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1 $image)
+ratio=$(round "$height/$width" 0)
+
+if [[ $ratio > 2 ]]; then
+  speed=2
+  frames=$(round "$height/$speed" 0)
+  wheight=$(round "9*$width/16" 0)
+  echo $wheight
+  wwidth=$width
+  ffmpeg -f lavfi -i color=s=${wwidth}x${wheight} -i $image -filter_complex "[0][1]overlay=x=0:y=H-${speed}*n" -vframes $frames $title.mp4
+  exit
+fi
+
 #default rate when no change for image
 rate=${rate:-1/5}
 
@@ -195,7 +209,6 @@ elif [[ "$image" == *".csv"* ]]; then
   exit
 fi
 
-eval $(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1 $image)
 #ffmpeg -i a.jpg -vf scale=640:480 b.jpg
 #Padded dimensions cannot be smaller than input dimensions.
 chars=$(echo -n $title|wc -m|grep -oE "[0-9]+")
