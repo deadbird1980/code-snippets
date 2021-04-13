@@ -1,0 +1,1 @@
+curl -H 'cookie: wap_sid2=XXXXXXX' -H 'user-agent: MicroMessenger' https://mp.weixin.qq.com/mp/profile_ext\?action\=home\&__biz\=Mzk0MDIwNTQxNw\=\= | grep -oE "var msgList = '{(.*)}';"|grep -Eo "{[^']+}"|sed -e 's/&quot;/"/g'|jq '.'
