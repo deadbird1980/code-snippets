@@ -21,7 +21,7 @@ function route_from(arr, key, route=[]) {
 
 	var val = arr[key];
 	for(var i in val) {
-		var nroute = route.filter(function(){return true});
+		var nroute = route.filter(() => true);
 		route_from(arr, val[i], nroute);
 	}
 }
